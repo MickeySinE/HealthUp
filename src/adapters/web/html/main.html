@@ -14,18 +14,13 @@
   <!-- NAVBAR -->
   <nav class="navbar">
     <div class="navbar__inner">
-
-      <a href="#" class="navbar__logo">
-        Health<span>UP</span>
-      </a>
-
+      <a href="#" class="navbar__logo" data-page="inicio">Health<span>UP</span></a>
       <ul class="navbar__links">
-        <li><a href="#">Inicio</a></li>
-        <li><a href="#">Nutrición</a></li>
-        <li><a href="#">Recetas</a></li>
-        <li><a href="#">Blog</a></li>
+        <li><a href="#" data-page="inicio" class="is-active">Inicio</a></li>
+        <li><a href="#" data-page="nutricion">Nutrición</a></li>
+        <li><a href="#" data-page="recetas">Recetas</a></li>
+        <li><a href="#" data-page="blog">Blog</a></li>
       </ul>
-
       <div class="navbar__actions">
         <div class="auth-dropdown">
           <button class="btn btn--primary auth-dropdown__trigger" aria-haspopup="true" aria-expanded="false">
@@ -35,17 +30,13 @@
             </svg>
           </button>
           <div class="auth-dropdown__menu" role="menu">
-            <div class="auth-dropdown__header">
-              <p>¿Ya tienes cuenta?</p>
-            </div>
+            <div class="auth-dropdown__header"><p>¿Ya tienes cuenta?</p></div>
             <a href="#" class="auth-dropdown__item auth-dropdown__item--primary" role="menuitem" data-auth="login">
               <span class="auth-dropdown__item-icon">→</span>
               Iniciar sesión
             </a>
             <div class="auth-dropdown__divider"></div>
-            <div class="auth-dropdown__header">
-              <p>¿Nuevo por aquí?</p>
-            </div>
+            <div class="auth-dropdown__header"><p>¿Nuevo por aquí?</p></div>
             <a href="#" class="auth-dropdown__item" role="menuitem" data-auth="register">
               <span class="auth-dropdown__item-icon">✦</span>
               Crear cuenta gratis
@@ -53,29 +44,21 @@
           </div>
         </div>
       </div>
-
       <button class="navbar__hamburger" aria-label="Abrir menú">
         <span></span><span></span><span></span>
       </button>
-
     </div>
   </nav>
 
   <!-- MODAL AUTH -->
   <div class="modal-overlay" id="authModal" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true">
-
       <button class="modal__close" aria-label="Cerrar">✕</button>
-
       <div class="modal__logo">Health<span>UP</span></div>
-
-      <!-- TABS -->
       <div class="modal__tabs">
         <button class="modal__tab is-active" data-tab="login">Iniciar sesión</button>
         <button class="modal__tab" data-tab="register">Crear cuenta</button>
       </div>
-
-      <!-- LOGIN FORM -->
       <div class="modal__panel is-active" id="panel-login">
         <div class="form-group">
           <label for="login-email">Correo electrónico</label>
@@ -87,13 +70,8 @@
         </div>
         <div class="form-error" id="login-error"></div>
         <button class="btn btn--primary btn--full" id="loginSubmit">Entrar</button>
-        <p class="modal__footer-text">
-          ¿No tienes cuenta?
-          <a href="#" data-tab="register">Regístrate gratis</a>
-        </p>
+        <p class="modal__footer-text">¿No tienes cuenta? <a href="#" data-tab="register">Regístrate gratis</a></p>
       </div>
-
-      <!-- REGISTER FORM -->
       <div class="modal__panel" id="panel-register">
         <div class="form-group">
           <label for="reg-username">Nombre de usuario</label>
@@ -113,43 +91,150 @@
         </div>
         <div class="form-error" id="register-error"></div>
         <button class="btn btn--primary btn--full" id="registerSubmit">Crear cuenta</button>
-        <p class="modal__footer-text">
-          ¿Ya tienes cuenta?
-          <a href="#" data-tab="login">Inicia sesión</a>
-        </p>
+        <p class="modal__footer-text">¿Ya tienes cuenta? <a href="#" data-tab="login">Inicia sesión</a></p>
       </div>
-
     </div>
   </div>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero__bg-text" aria-hidden="true">HealthUP</div>
-
-    <div class="hero__content">
-      <p class="hero__eyebrow">Bienestar · Nutrición · Prevención</p>
-      <h1 class="hero__headline">
-        Come mejor,<br /><em>vive más.</em>
-      </h1>
-      <p class="hero__sub">
-        Información clara y accesible sobre nutrición y hábitos saludables.
-        Rompe los mitos, entiende tu cuerpo y toma decisiones que importan.
-      </p>
-      <div class="hero__cta">
-        <a href="#" class="btn btn--primary btn--lg">Empezar ahora</a>
-        <a href="#" class="btn btn--ghost btn--lg">Explorar recetas</a>
+  <!-- ══ PÁGINA: INICIO ══ -->
+  <section class="page" id="page-inicio">
+    <div class="hero">
+      <div class="hero__bg-text" aria-hidden="true">HealthUP</div>
+      <div class="hero__content">
+        <p class="hero__eyebrow">Bienestar · Nutrición · Prevención</p>
+        <h1 class="hero__headline">Come mejor,<br /><em>vive más.</em></h1>
+        <p class="hero__sub">
+          Información clara y accesible sobre nutrición y hábitos saludables.
+          Rompe los mitos, entiende tu cuerpo y toma decisiones que importan.
+        </p>
+        <div class="hero__cta">
+          <a href="#" class="btn btn--primary btn--lg" data-page="nutricion">Explorar nutrición</a>
+          <a href="#" class="btn btn--ghost btn--lg" data-page="recetas">Ver recetas</a>
+        </div>
       </div>
-    </div>
-
-    <div class="hero__pills" aria-hidden="true">
-      <span class="pill">🥦 Sin procesar</span>
-      <span class="pill">💧 Hidratación</span>
-      <span class="pill">🌿 Basado en plantas</span>
-      <span class="pill">🧠 Salud mental</span>
-      <span class="pill">🏃 Movimiento</span>
+      <div class="hero__pills" aria-hidden="true">
+        <span class="pill">🥦 Sin procesar</span>
+        <span class="pill">💧 Hidratación</span>
+        <span class="pill">🌿 Basado en plantas</span>
+        <span class="pill">🧠 Salud mental</span>
+        <span class="pill">🏃 Movimiento</span>
+      </div>
     </div>
   </section>
 
-  <script src="../assets/components/main.js"></script>
+  <!-- ══ PÁGINA: NUTRICIÓN ══ -->
+  <section class="page" id="page-nutricion" hidden>
+    <div class="page-hero">
+      <p class="hero__eyebrow">Educación · Ciencia · Bienestar</p>
+      <h1 class="page-hero__title">Nutrición</h1>
+      <p class="page-hero__sub">Aprende a leer lo que comes. Sin dietas milagro, sin mitos — solo información real.</p>
+    </div>
+    <div class="page-content">
+      <div class="coming-soon-grid">
+        <div class="coming-soon-card">
+          <span class="coming-soon-card__icon">🥗</span>
+          <h3>Macronutrientes</h3>
+          <p>Proteínas, carbohidratos y grasas — qué son y para qué sirven.</p>
+          <span class="badge">Próximamente</span>
+        </div>
+        <div class="coming-soon-card">
+          <span class="coming-soon-card__icon">💊</span>
+          <h3>Vitaminas y minerales</h3>
+          <p>Micronutrientes esenciales que tu cuerpo necesita cada día.</p>
+          <span class="badge">Próximamente</span>
+        </div>
+        <div class="coming-soon-card">
+          <span class="coming-soon-card__icon">🚫</span>
+          <h3>Mitos y realidades</h3>
+          <p>Desmontamos las creencias más comunes sobre la alimentación.</p>
+          <span class="badge">Próximamente</span>
+        </div>
+        <div class="coming-soon-card">
+          <span class="coming-soon-card__icon">🔍</span>
+          <h3>Buscador de alimentos</h3>
+          <p>Consulta la información nutricional de cualquier alimento.</p>
+          <span class="badge">Próximamente</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PÁGINA: RECETAS ══ -->
+  <section class="page" id="page-recetas" hidden>
+    <div class="page-hero">
+      <p class="hero__eyebrow">Saludable · Delicioso · Fácil</p>
+      <h1 class="page-hero__title">Recetas</h1>
+      <p class="page-hero__sub">Ideas de comidas que nutren tu cuerpo sin sacrificar el sabor.</p>
+    </div>
+    <div class="page-content">
+      <h2 class="section-title">Recetas saludables destacadas</h2>
+      <div class="cards-grid">
+        <div class="recipe-card">
+          <div class="recipe-card__img">🥑</div>
+          <div class="recipe-card__body">
+            <h3>Bowl de aguacate</h3>
+            <p>Rico en grasas saludables y fibra. Perfecto para empezar el día.</p>
+            <span class="badge">Próximamente</span>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-card__img">🍗</div>
+          <div class="recipe-card__body">
+            <h3>Pollo al limón</h3>
+            <p>Alto en proteína, bajo en grasa. Ideal para después del ejercicio.</p>
+            <span class="badge">Próximamente</span>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-card__img">🥦</div>
+          <div class="recipe-card__body">
+            <h3>Ensalada verde</h3>
+            <p>Vitaminas, minerales y antioxidantes en un solo plato.</p>
+            <span class="badge">Próximamente</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PÁGINA: BLOG ══ -->
+  <section class="page" id="page-blog" hidden>
+    <div class="page-hero">
+      <p class="hero__eyebrow">Artículos · Consejos · Tendencias</p>
+      <h1 class="page-hero__title">Blog</h1>
+      <p class="page-hero__sub">Contenido actualizado sobre salud, nutrición y hábitos que transforman tu vida.</p>
+    </div>
+    <div class="page-content">
+      <h2 class="section-title">Artículos recientes</h2>
+      <div class="blog-list">
+        <div class="blog-card">
+          <div class="blog-card__meta">
+            <span class="blog-card__tag">Nutrición</span>
+            <span class="blog-card__date">Próximamente</span>
+          </div>
+          <h3>¿Cuánta proteína necesitas realmente?</h3>
+          <p>La ciencia detrás de los requerimientos proteicos según tu estilo de vida.</p>
+        </div>
+        <div class="blog-card">
+          <div class="blog-card__meta">
+            <span class="blog-card__tag">Hábitos</span>
+            <span class="blog-card__date">Próximamente</span>
+          </div>
+          <h3>El poder del desayuno: mito o realidad</h3>
+          <p>Analizamos la evidencia científica sobre la comida más importante del día.</p>
+        </div>
+        <div class="blog-card">
+          <div class="blog-card__meta">
+            <span class="blog-card__tag">Prevención</span>
+            <span class="blog-card__date">Próximamente</span>
+          </div>
+          <h3>Azúcar oculta: cómo identificarla en las etiquetas</h3>
+          <p>Aprende a leer etiquetas nutricionales y descubre el azúcar escondida.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="../components/main.js"></script>
 </body>
 </html>
