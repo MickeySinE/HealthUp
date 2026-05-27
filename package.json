@@ -1,24 +1,10 @@
-{
-  "name": "healthup",
-  "version": "1.0.0",
-  "description": "",
+﻿{
   "type": "module",
-  "main": "index.js",
-  "directories": {
-    "test": "test"
-  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node src/adapters/server/server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/MickeySinE/HealthUp.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/MickeySinE/HealthUp/issues"
-  },
-  "homepage": "https://github.com/MickeySinE/HealthUp#readme"
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
 }

@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "node src/infrastructure/server/server.js"
+  "dev": "node src/adapters/server/server.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
