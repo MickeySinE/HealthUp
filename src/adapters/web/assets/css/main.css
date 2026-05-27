@@ -82,7 +82,7 @@ ul {
 }
 
 .btn--ghost {
-  background: transparent;
+  background:var(--stone-50);
   color: var(--stone-900);
   border-color: var(--stone-300);
 }
@@ -111,7 +111,7 @@ ul {
 .navbar__inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 20px 2rem;
   height: 100%;
   display: flex;
   align-items: center;
@@ -756,4 +756,148 @@ ul {
   font-size: 0.875rem;
   color: var(--stone-600);
   line-height: 1.6;
+}
+/* ── SEARCH ── */
+.navbar__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.navbar__search input {
+  width: 100%;
+  padding: 0.45rem 2.5rem 0.45rem 1rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--stone-100);
+  background: var(#fff);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--stone-900);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.navbar__search input:focus {
+  border-color: var(--green-400);
+  box-shadow: 0 0 0 3px rgba(58, 172, 96, 0.12);
+  background: #fff;
+}
+
+.navbar__search input::placeholder {
+  color: var(--stone-300);
+}
+
+.navbar__search__icon {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--stone-300);
+  pointer-events: none;
+  font-size: 0.85rem;
+}
+
+#sugerencias {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #fff;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  width: 100%;
+  display: none;
+  z-index: 200;
+}
+
+@media (max-width: 768px) {
+  .navbar__search { display: none; }
+}
+/* ── NUTRITION CARD ── */
+.nutrition-card {
+  background: #fff;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.nutrition-card:hover {
+  border-color: var(--green-400);
+  box-shadow: 0 4px 16px rgba(58, 172, 96, 0.1);
+}
+
+.nutrition-card__header {
+  background: var(--green-50);
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--green-100);
+}
+
+.nutrition-card__name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--stone-900);
+  margin-bottom: 0.2rem;
+  text-transform: capitalize;
+}
+
+.nutrition-card__portion {
+  font-size: 0.78rem;
+  color: var(--stone-600);
+}
+
+.nutrition-card__calories {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 0.6rem;
+}
+
+.nutrition-card__calories-num {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--green-600);
+  line-height: 1;
+}
+
+.nutrition-card__calories-label {
+  font-size: 0.8rem;
+  color: var(--stone-600);
+}
+
+.nutrition-card__macros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.nutrition-card__macro {
+  padding: 0.85rem 0.75rem;
+  text-align: center;
+  border-right: 1px solid var(--stone-100);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nutrition-card__macro:last-child {
+  border-right: none;
+}
+
+.nutrition-card__macro-val {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--stone-900);
+}
+
+.nutrition-card__macro-label {
+  font-size: 0.72rem;
+  color: var(--stone-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }

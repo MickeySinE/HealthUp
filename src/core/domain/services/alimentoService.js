@@ -5,7 +5,7 @@ import { buscarAlimento as buscarOFF } from "../../../adapters/APIs/openfoodfact
 export async function buscarAlimento(nombre) {
   try {
     const resultados = await buscarUSDA(nombre);
-    if (resultados.length > 0) {
+    if (resultados && resultados.length > 0){
       console.log("Fuente: USDA");
       return resultados;
     }
@@ -15,7 +15,7 @@ export async function buscarAlimento(nombre) {
 
   try {
     const resultados = await buscarNinjas(nombre);
-    if (resultados.length > 0) {
+    if (resultados && resultados.length > 0){
       console.log("Fuente: CalorieNinjas");
       return resultados;
     }
@@ -39,7 +39,7 @@ export async function calcularCalorias(alimentos) {
 
   for (const item of alimentos) {
     const resultados = await buscarAlimento(item.nombre);
-    if (resultados.length > 0) {
+    if (resultados && resultados.length > 0){
       const alimento = resultados[0];
       const factor = item.cantidad / 100;
       const calorias = alimento.calorias * factor;

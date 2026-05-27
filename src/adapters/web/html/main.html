@@ -15,35 +15,44 @@
   <nav class="navbar">
     <div class="navbar__inner">
       <a href="#" class="navbar__logo" data-page="inicio">Health<span>UP</span></a>
+
       <ul class="navbar__links">
         <li><a href="#" data-page="inicio" class="is-active">Inicio</a></li>
         <li><a href="#" data-page="nutricion">Nutrición</a></li>
         <li><a href="#" data-page="recetas">Recetas</a></li>
         <li><a href="#" data-page="blog">Blog</a></li>
       </ul>
+
+      <!-- BUSCADOR -->
+      <div class="navbar__search">
+        <input id="buscador" type="text" placeholder="Buscar alimentos..." autocomplete="off" />
+        <span class="navbar__search__icon">🔍</span>
+        <ul id="sugerencias"></ul>
+      </div>
+
+      <!-- ACCIONES -->
       <div class="navbar__actions">
         <div class="auth-dropdown">
           <button class="btn btn--primary auth-dropdown__trigger" aria-haspopup="true" aria-expanded="false">
             Iniciar sesión
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
           <div class="auth-dropdown__menu" role="menu">
             <div class="auth-dropdown__header"><p>¿Ya tienes cuenta?</p></div>
             <a href="#" class="auth-dropdown__item auth-dropdown__item--primary" role="menuitem" data-auth="login">
-              <span class="auth-dropdown__item-icon">→</span>
-              Iniciar sesión
+              <span class="auth-dropdown__item-icon">→</span> Iniciar sesión
             </a>
             <div class="auth-dropdown__divider"></div>
             <div class="auth-dropdown__header"><p>¿Nuevo por aquí?</p></div>
             <a href="#" class="auth-dropdown__item" role="menuitem" data-auth="register">
-              <span class="auth-dropdown__item-icon">✦</span>
-              Crear cuenta gratis
+              <span class="auth-dropdown__item-icon">✦</span> Crear cuenta gratis
             </a>
           </div>
         </div>
       </div>
+
       <button class="navbar__hamburger" aria-label="Abrir menú">
         <span></span><span></span><span></span>
       </button>
@@ -232,6 +241,24 @@
           <p>Aprende a leer etiquetas nutricionales y descubre el azúcar escondida.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ══ PÁGINA: BUSCADOR ══ -->
+  <section class="page" id="page-search" hidden>
+    <div class="page-hero">
+      <p class="hero__eyebrow">Buscador · Nutrición · Datos reales</p>
+      <h1 class="page-hero__title" id="search-title">Resultados</h1>
+      <p class="page-hero__sub" id="search-sub">Información nutricional por cada 100g de porción.</p>
+    </div>
+    <div class="page-content">
+      <div id="search-state-loading" hidden>
+        <p style="color: var(--stone-600); text-align:center; padding: 3rem 0;">Buscando…</p>
+      </div>
+      <div id="search-state-empty" hidden>
+        <p style="color: var(--stone-600); text-align:center; padding: 3rem 0;">No encontramos resultados para esa búsqueda.</p>
+      </div>
+      <div id="searchResults" class="cards-grid"></div>
     </div>
   </section>
 

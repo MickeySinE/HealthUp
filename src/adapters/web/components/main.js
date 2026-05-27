@@ -302,14 +302,82 @@ function initNavbarScroll() {
     navbar.classList.toggle('is-scrolled', window.scrollY > 10);
   }, { passive: true });
 }
+// ── BUSCADOR ────────────────────────────────────
+function crearTarjeta(alimento) {
+  return `
+    <div class="coming-soon-card">
+      <span class="coming-soon-card__icon">🥗</span>
+      <h3>${alimento.nombre}</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+        <span class="badge">🔥 ${Math.round(alimento.calorias)} kcal</span>
+        <span class="badge">🥩 ${Math.round(alimento.proteinas)}g prot</span>
+        <span class="badge">🍞 ${Math.round(alimento.carbohidratos)}g carbs</span>
+        <span class="badge">🫒 ${Math.round(alimento.grasas)}g grasas</span>
+      </div>
+      <p style="margin-top:8px;font-size:12px;opacity:0.5">Fuente: ${alimento.fuente}</p>
+    </div>
+  `;
+}
 
-const session = getSession();
+function initBuscador() {
+  const input = document.getElementById('buscador');
+  if (!input) return;
 
-initNavigation();
-initAuthDropdown();
-initAuthModal();
-initAuthModalTriggers();
-initHamburger();
-initNavbarScroll();
+  let timeout = null;
 
-if (session) updateNavbarAuth(session);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') buscar(input.value.trim());
+  });
+
+  input.addEventListener('input', () => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      if (input.value.trim().length > 2) buscar(input.value.trim());
+    }, 600);
+  });
+let ultimaBusqueda = 0;
+
+async function buscar(query) {
+  if (!query) return;
+
+  const idBusqueda = ++ultimaBusqueda;
+// Navegar a page-search
+  document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
+  document.getElementById('page-search').removeAttribute('hidden');
+  const container = document.getElementById('searchResults');
+  container.innerHTML = '<p style="opacity:0.5">Buscando...</p>';
+
+  try {
+    const res  = await fetch(`${API_URL}/buscar?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+
+    if (idBusqueda !== ultimaBusqueda) return;
+
+    if (!data.length) {
+      container.innerHTML = '<p style="opacity:0.5">No se encontraron resultados.</p>';
+      return;
+    }
+
+    container.innerHTML = data.slice(0,6).map(crearTarjeta).join('');
+
+  } catch (err) {
+    if (idBusqueda !== ultimaBusqueda) return;
+    container.innerHTML = '<p style="opacity:0.5">Error al conectar.</p>';
+  }
+}
+}
+document.addEventListener("DOMContentLoaded", () => {
+
+  initBuscador();
+
+  const session = getSession();
+
+  initNavigation();
+  initAuthDropdown();
+  initAuthModal();
+  initAuthModalTriggers();
+  initHamburger();
+  initNavbarScroll();
+
+  if (session) updateNavbarAuth(session);
+});
