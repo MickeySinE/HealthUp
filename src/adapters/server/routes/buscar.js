@@ -5,76 +5,67 @@ router.get('/buscar', async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ error: 'Falta el parámetro q' });
 
-  const urlUSDA = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${q}&api_key=${process.env.USDA_API_KEY}`;
-  const urlOFF  = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${q}&json=true&page_size=8`;
+  const urlUSDA = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&api_key=${process.env.USDA_API_KEY}`;
+  const urlOFF  = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&json=true&page_size=8`;
 
-  try {
+  // Consultar ambas APIs en paralelo
+  const [resultadosUSDA, resultadosOFF] = await Promise.all([
 
-    // 🥇 USDA
-    try {
-      const resUSDA = await fetch(urlUSDA);
-
-      if (resUSDA.ok) {
-        const text = await resUSDA.text(); // 👈 clave
-        const dataUSDA = JSON.parse(text); // 👈 evita crash
-
-        if (dataUSDA.foods && dataUSDA.foods.length > 0) {
-          const resultados = dataUSDA.foods.slice(0, 8).map(item => {
-            const n = item.foodNutrients || [];
-            const buscar = (id) => n.find(x => x.nutrientId === id)?.value ?? 0;
-
-            return {
-              nombre: item.description,
-              calorias: buscar(1008),
-              proteinas: buscar(1003),
-              carbohidratos: buscar(1005),
-              grasas: buscar(1004),
-              fuente: 'USDA'
-            };
-          });
-
-          return res.json(resultados);
-        }
-      }
-
-    } catch (e) {
-      console.warn("USDA falló:", e.message);
-    }
-
-    // 🥈 OpenFoodFacts
-    try {
-      const resOFF = await fetch(urlOFF);
-
-      if (resOFF.ok) {
-        const text = await resOFF.text(); // 👈 igual aquí
-        const dataOFF = JSON.parse(text);
-
-        const resultados = (dataOFF.products || []).map(item => {
-          const n = item.nutriments || {};
+    // USDA
+    fetch(urlUSDA)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.foods?.length) return [];
+        return data.foods.slice(0, 5).map(item => {
+          const n = item.foodNutrients || [];
+          const get = (id) => n.find(x => x.nutrientId === id)?.value ?? 0;
           return {
-            nombre: item.product_name || 'Sin nombre',
-            calorias: n['energy-kcal_100g'] ?? 0,
-            proteinas: n['proteins_100g'] ?? 0,
-            carbohidratos: n['carbohydrates_100g'] ?? 0,
-            grasas: n['fat_100g'] ?? 0,
-            fuente: 'OpenFoodFacts'
+            nombre:        item.description,
+            calorias:      get(1008),
+            proteinas:     get(1003),
+            carbohidratos: get(1005),
+            grasas:        get(1004),
+            fuente:        'USDA'
           };
         });
+      })
+      .catch(e => { console.warn('USDA falló:', e.message); return []; }),
 
-        return res.json(resultados);
-      }
+    // OpenFoodFacts
+    fetch(urlOFF)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.products?.length) return [];
+        return data.products
+          .filter(p => p.product_name)
+          .slice(0, 5)
+          .map(item => {
+            const n = item.nutriments || {};
+            return {
+              nombre:        item.product_name,
+              calorias:      n['energy-kcal_100g'] ?? 0,
+              proteinas:     n['proteins_100g']    ?? 0,
+              carbohidratos: n['carbohydrates_100g'] ?? 0,
+              grasas:        n['fat_100g']          ?? 0,
+              fuente:        'OpenFoodFacts'
+            };
+          });
+      })
+      .catch(e => { console.warn('OpenFoodFacts falló:', e.message); return []; })
 
-    } catch (e) {
-      console.warn("OFF falló:", e.message);
-    }
+  ]);
 
-    // 🧯 si todo falla
-    return res.json([]);
+  // Combinar y eliminar duplicados por nombre
+  const todos = [...resultadosUSDA, ...resultadosOFF];
+  const vistos = new Set();
+  const resultados = todos.filter(item => {
+    const key = item.nombre.toLowerCase().trim();
+    if (vistos.has(key)) return false;
+    vistos.add(key);
+    return true;
+  });
 
-  } catch (err) {
-    console.error("ERROR REAL:", err);
-    res.status(500).json({ error: err.message });
-  }
+  return res.json(resultados);
 });
 
 module.exports = router;
