@@ -303,86 +303,43 @@ function initBuscador() {
   const input = document.getElementById('buscador');
   if (!input) return;
 
-  let ultimaBusqueda = 0;
-  let timeout = null;
+  function irARecetasYFiltrar(query) {
+    const recetasPage = document.getElementById('page-recetas');
+    const allPages = document.querySelectorAll('.page');
+    const navLinks = document.querySelectorAll('[data-page]');
 
-  async function buscar(query) {
-    if (!query) return;
-    const idBusqueda = ++ultimaBusqueda;
+    allPages.forEach(p => p.setAttribute('hidden', ''));
+    recetasPage?.removeAttribute('hidden');
 
-    document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
-    const pageSearch = document.getElementById('page-search');
-    if (pageSearch) pageSearch.removeAttribute('hidden');
+    navLinks.forEach(l => {
+      l.classList.toggle('is-active', l.dataset.page === 'recetas');
+    });
 
-    const title   = document.getElementById('search-title');
-    const sub     = document.getElementById('search-sub');
-    const loading = document.getElementById('search-state-loading');
-    const empty   = document.getElementById('search-state-empty');
-    const grid    = document.getElementById('searchResults');
+    const cards = document.querySelectorAll('#recetas-grid .recipe-card');
 
-    if (title) title.textContent = `"${query}"`;
-    if (sub) sub.textContent = 'Información nutricional por cada 100g de porción.';
-    if (loading) loading.hidden = false;
-    if (empty) empty.hidden = true;
-    if (grid) grid.innerHTML = '';
-
-    try {
-      const res  = await fetch(`${API_URL}/buscar?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-
-      if (idBusqueda !== ultimaBusqueda) return;
-      if (loading) loading.hidden = true;
-
-      if (!data.length) {
-        if (empty) empty.hidden = false;
-        return;
-      }
-
-      if (grid) {
-        grid.innerHTML = data.map(a => `
-          <div class="nutrition-card">
-            <div class="nutrition-card__header">
-              <p class="nutrition-card__name">${a.nombre}</p>
-              <p class="nutrition-card__portion">Por cada 100g</p>
-              <div class="nutrition-card__calories">
-                <span class="nutrition-card__calories-num">${a.calorias ?? '—'}</span>
-                <span class="nutrition-card__calories-label">kcal</span>
-              </div>
-            </div>
-            <div class="nutrition-card__macros">
-              <div class="nutrition-card__macro">
-                <span class="nutrition-card__macro-val">${a.proteinas ?? '—'}g</span>
-                <span class="nutrition-card__macro-label">Proteína</span>
-              </div>
-              <div class="nutrition-card__macro">
-                <span class="nutrition-card__macro-val">${a.carbohidratos ?? '—'}g</span>
-                <span class="nutrition-card__macro-label">Carbos</span>
-              </div>
-              <div class="nutrition-card__macro">
-                <span class="nutrition-card__macro-val">${a.grasas ?? '—'}g</span>
-                <span class="nutrition-card__macro-label">Grasas</span>
-              </div>
-            </div>
-          </div>
-        `).join('');
-      }
-
-    } catch {
-      if (idBusqueda !== ultimaBusqueda) return;
-      if (loading) loading.hidden = true;
-      if (empty) empty.hidden = false;
-      if (sub) sub.textContent = 'Error al conectar con el servidor. ¿Está corriendo?';
-    }
+    cards.forEach(card => {
+      const texto = card.textContent.toLowerCase();
+      const visible = texto.includes(query.toLowerCase());
+      card.style.display = visible ? '' : 'none';
+    });
   }
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && input.value.trim().length >= 2) buscar(input.value.trim());
+    if (e.key === 'Enter') {
+      const q = input.value.trim();
+      if (q.length >= 1) irARecetasYFiltrar(q);
+    }
   });
 
   input.addEventListener('input', () => {
-    clearTimeout(timeout);
     const q = input.value.trim();
-    if (q.length >= 3) timeout = setTimeout(() => buscar(q), 600);
+    if (!q) {
+      document.querySelectorAll('#recetas-grid .recipe-card').forEach(card => {
+        card.style.display = '';
+      });
+      return;
+    }
+    irARecetasYFiltrar(q);
   });
 }
 
@@ -398,28 +355,39 @@ async function toggleLike(tipo, itemId, btnEl) {
     ? `${API_URL}/foro/posts/${itemId}/like`
     : `${API_URL}/recetas/${itemId}/like`;
 
+  const countEl = btnEl.querySelector('.like-count');
+  const currentCount = countEl ? Number(countEl.textContent || '0') : 0;
   const wasLiked = btnEl.classList.contains('is-liked');
+
+  // UI optimista
   btnEl.classList.toggle('is-liked', !wasLiked);
-  btnEl.setAttribute('aria-pressed', !wasLiked);
+  btnEl.setAttribute('aria-pressed', String(!wasLiked));
+  if (countEl) countEl.textContent = String(Math.max(0, currentCount + (wasLiked ? -1 : 1)));
 
   try {
-    const res  = await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.id })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) throw new Error(data.error || 'Error al dar like');
 
-    btnEl.classList.toggle('is-liked', data.liked);
-    btnEl.setAttribute('aria-pressed', data.liked);
+    btnEl.classList.toggle('is-liked', !!data.liked);
+    btnEl.setAttribute('aria-pressed', String(!!data.liked));
 
-    const countEl = btnEl.querySelector('.like-count');
-    if (countEl && data.count !== undefined) countEl.textContent = data.count;
-
+    if (countEl) {
+      if (typeof data.count !== 'undefined') {
+        countEl.textContent = String(data.count);
+      } else {
+        countEl.textContent = String(Math.max(0, currentCount + (data.liked ? 1 : -1)));
+      }
+    }
   } catch {
+    // revertir UI
     btnEl.classList.toggle('is-liked', wasLiked);
-    btnEl.setAttribute('aria-pressed', wasLiked);
+    btnEl.setAttribute('aria-pressed', String(wasLiked));
+    if (countEl) countEl.textContent = String(currentCount);
   }
 }
 
@@ -439,7 +407,13 @@ const recetas = [
   { id: null, titulo: "Yogur con granola y fresas", categoria: "Snack", tiempo: "5 min", calorias: 200, descripcion: "Yogur griego con granola crujiente y fresas frescas.", ingredientes: ["Yogur griego","Granola","Fresas","Miel"], foto: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80" },
   { id: null, titulo: "Manzana con mantequilla de cacahuate", categoria: "Snack", tiempo: "3 min", calorias: 190, descripcion: "Rodajas de manzana con mantequilla de cacahuate natural.", ingredientes: ["Manzana","Mantequilla de cacahuate"], foto: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=400&q=80" },
   { id: null, titulo: "Licuado verde", categoria: "Snack", tiempo: "5 min", calorias: 150, descripcion: "Espinaca, pepino, piña y agua de coco licuados.", ingredientes: ["Espinaca","Pepino","Piña","Agua de coco","Limón"], foto: "https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&q=80" },
-  { id: null, titulo: "Bowl de frutas con chía", categoria: "Snack", tiempo: "5 min", calorias: 170, descripcion: "Frutas de temporada con semillas de chía y jugo de naranja.", ingredientes: ["Frutas de temporada","Semillas de chía","Jugo de naranja","Miel"], foto: "https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=400&q=80" }
+  { id: null, titulo: "Bowl de frutas con chía", categoria: "Snack", tiempo: "5 min", calorias: 170, descripcion: "Frutas de temporada con semillas de chía y jugo de naranja.", ingredientes: ["Frutas de temporada","Semillas de chía","Jugo de naranja","Miel"], foto: "https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=400&q=80" },
+  { id: null, titulo: "Wrap de pollo con verduras", categoria: "Comida", tiempo: "15 min", calorias: 340, descripcion: "Tortilla integral rellena de pollo deshebrado, lechuga, zanahoria y yogur.", ingredientes: ["Tortilla integral","Pollo","Lechuga","Zanahoria","Yogur natural"], foto: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400&q=80" },
+  { id: null, titulo: "Ensalada griega ligera", categoria: "Comida", tiempo: "12 min", calorias: 260, descripcion: "Pepino, jitomate, queso fresco y aceitunas con aderezo ligero.", ingredientes: ["Pepino","Jitomate","Queso fresco","Aceitunas","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80" },
+  { id: null, titulo: "Sándwich de pavo", categoria: "Cena", tiempo: "8 min", calorias: 290, descripcion: "Pan integral con pavo, tomate, espinaca y mostaza.", ingredientes: ["Pan integral","Pavo","Tomate","Espinaca","Mostaza"], foto: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
+  { id: null, titulo: "Bowl de quinoa", categoria: "Comida", tiempo: "20 min", calorias: 360, descripcion: "Quinoa con aguacate, garbanzos, pepino y limón.", ingredientes: ["Quinoa","Garbanzos","Aguacate","Pepino","Limón"], foto: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80" },
+  { id: null, titulo: "Pan francés saludable", categoria: "Desayuno", tiempo: "10 min", calorias: 240, descripcion: "Pan integral remojado en huevo con canela y fruta fresca.", ingredientes: ["Pan integral","Huevo","Canela","Leche","Fruta"], foto: "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&q=80" },
+  { id: null, titulo: "Smoothie de frutos rojos", categoria: "Snack", tiempo: "5 min", calorias: 180, descripcion: "Licuado cremoso con frutos rojos, yogur y avena.", ingredientes: ["Frutos rojos","Yogur","Avena","Leche"], foto: "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?w=400&q=80" }
 ];
 
 async function initRecetas() {
@@ -667,19 +641,29 @@ async function initNuevoPost() {
   const form = document.getElementById('nuevo-post-form');
   if (!form) return;
 
+  if (form.dataset.bound === 'true') return;
+  form.dataset.bound = 'true';
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const user = getSession();
-    if (!user) return openModal('login');
 
-    const titulo    = document.getElementById('post-titulo')?.value.trim();
+    const user = getSession();
+    if (!user) {
+      openModal('login');
+      return;
+    }
+
+    const titulo = document.getElementById('post-titulo')?.value.trim();
     const contenido = document.getElementById('post-contenido')?.value.trim();
-    const categoria = document.getElementById('post-categoria')?.value;
+    const categoria = document.getElementById('post-categoria')?.value || '';
 
     if (!titulo || !contenido) return;
 
     const btn = form.querySelector('button[type="submit"]');
-    btn.disabled    = true;
+    if (btn.disabled) return;
+
+    btn.disabled = true;
+    const originalText = btn.textContent;
     btn.textContent = 'Publicando...';
 
     try {
@@ -688,17 +672,24 @@ async function initNuevoPost() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.id, titulo, contenido, categoria })
       });
-      if (res.ok) {
-        form.reset();
-        initForo();
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        alert(data?.error || 'No se pudo publicar el post.');
+        return;
       }
+
+      form.reset();
+      await initForo();
+    } catch {
+      alert('Error al conectar con el servidor.');
     } finally {
-      btn.disabled    = false;
-      btn.textContent = 'Publicar';
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   });
 }
-
 // ── PERFIL ─────────────────────────────────────
 async function loadPerfil(userId) {
   const user = getSession();

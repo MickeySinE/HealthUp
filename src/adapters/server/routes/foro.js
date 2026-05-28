@@ -47,26 +47,36 @@ router.post('/posts/:id/like', async (req, res) => {
 
   if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
 
-  // ¿Ya existe el like?
   const { data: existing } = await supabase
     .from('likes_posts')
     .select('id')
     .eq('user_id', user_id)
     .eq('post_id', post_id)
-    .single();
+    .maybeSingle();
 
   if (existing) {
-    // quitar like
-    await supabase.from('likes_posts').delete()
-      .eq('user_id', user_id).eq('post_id', post_id);
-    return res.json({ liked: false });
+    await supabase
+      .from('likes_posts')
+      .delete()
+      .eq('user_id', user_id)
+      .eq('post_id', post_id);
   } else {
-    // dar like
-    const { error } = await supabase.from('likes_posts')
+    const { error } = await supabase
+      .from('likes_posts')
       .insert([{ user_id, post_id }]);
+
     if (error) return res.status(500).json({ error: error.message });
-    return res.json({ liked: true });
   }
+
+  const { count } = await supabase
+    .from('likes_posts')
+    .select('*', { count: 'exact', head: true })
+    .eq('post_id', post_id);
+
+  return res.json({
+    liked: !existing,
+    count: count || 0
+  });
 });
 
 // GET /api/foro/posts/:id/likes?user_id=X  →  conteo + si el usuario ya dio like
