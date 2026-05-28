@@ -631,25 +631,25 @@ async function initForo() {
         }
       });
       // Eliminar post
-      grid.querySelectorAll('.eliminar-post').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    btn.textContent = '¿Seguro? (clic para confirmar)';
-    btn.style.background = '#d04040';
-    btn.style.color = '#fff';
+    grid.querySelectorAll('.eliminar-post').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.textContent = '¿Seguro? (clic para confirmar)';
+        btn.style.background = '#d04040';
+        btn.style.color = '#fff';
 
-    btn.onclick = async () => {
-      const id = btn.dataset.id;
-      try {
-        const res = await fetch(`${API_URL}/foro/posts/${id}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: user.id })
-        });
-        if (res.ok) btn.closest('.foro-card').remove();
-      } catch { alert('Error al eliminar.'); }
-    };
-  });
-});
+        btn.onclick = async () => {
+          const id = btn.dataset.id;
+          try {
+            const res = await fetch(`${API_URL}/foro/posts/${id}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: user.id })
+            });
+            if (res.ok) btn.closest('.foro-card').remove();
+          } catch { alert('Error al eliminar.'); }
+        };
+      });
+    });
       // Click en autor → perfil
       grid.querySelectorAll('.perfil-link').forEach(el => {
         el.addEventListener('click', () => {
