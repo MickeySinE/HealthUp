@@ -33,6 +33,16 @@ function initNavigation() {
       l.classList.toggle('is-active', l.dataset.page === pageId);
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (pageId === 'perfil') {
+      const session = getSession();
+      if (session) loadPerfil(session.id);
+    }
+    // AGREGA ESTO:
+    if (pageId === 'blog') {
+      initForo();
+      initNuevoPost();
+    }
   }
 
   navLinks.forEach(link => {
@@ -60,6 +70,11 @@ function updateNavbarAuth(user) {
         </button>
         <div class="auth-dropdown__menu" role="menu">
           <div class="auth-dropdown__header"><p>Hola, ${user.username}</p></div>
+          <a href="#" class="auth-dropdown__item" role="menuitem" data-page="perfil" id="perfilNavBtn">
+            <span class="auth-dropdown__item-icon">👤</span>
+            Mi perfil
+          </a>
+          <div class="auth-dropdown__divider"></div>
           <a href="#" class="auth-dropdown__item auth-dropdown__item--primary" id="logoutBtn" role="menuitem">
             <span class="auth-dropdown__item-icon">→</span>
             Cerrar sesión
@@ -68,6 +83,16 @@ function updateNavbarAuth(user) {
       </div>
     `;
     initAuthDropdown();
+
+    // Ir al perfil desde el dropdown
+    document.getElementById('perfilNavBtn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.querySelector('.auth-dropdown__menu').classList.remove('is-open');
+      document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
+      document.getElementById('page-perfil')?.removeAttribute('hidden');
+      loadPerfil(user.id);
+    });
+
     document.getElementById('logoutBtn').addEventListener('click', (e) => {
       e.preventDefault();
       clearSession();
@@ -264,7 +289,6 @@ function initHamburger() {
     btn.setAttribute('aria-label', isOpen ? 'Cerrar menú' : 'Abrir menú');
   });
 }
-
 // ── NAVBAR SCROLL SHADOW ───────────────────────
 function initNavbarScroll() {
   const navbar = document.querySelector('.navbar');
@@ -286,12 +310,10 @@ function initBuscador() {
     if (!query) return;
     const idBusqueda = ++ultimaBusqueda;
 
-    // Navegar a page-search
     document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
     const pageSearch = document.getElementById('page-search');
     if (pageSearch) pageSearch.removeAttribute('hidden');
 
-    // Actualizar título
     const title   = document.getElementById('search-title');
     const sub     = document.getElementById('search-sub');
     const loading = document.getElementById('search-state-loading');
@@ -364,33 +386,114 @@ function initBuscador() {
   });
 }
 
+// ── LIKES — TOGGLE (foro y recetas) ───────────
+async function toggleLike(tipo, itemId, btnEl) {
+  const user = getSession();
+  if (!user) {
+    openModal('login');
+    return;
+  }
+
+  const url = tipo === 'post'
+    ? `${API_URL}/foro/posts/${itemId}/like`
+    : `${API_URL}/recetas/${itemId}/like`;
+
+  const wasLiked = btnEl.classList.contains('is-liked');
+  btnEl.classList.toggle('is-liked', !wasLiked);
+  btnEl.setAttribute('aria-pressed', !wasLiked);
+
+  try {
+    const res  = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    btnEl.classList.toggle('is-liked', data.liked);
+    btnEl.setAttribute('aria-pressed', data.liked);
+
+    const countEl = btnEl.querySelector('.like-count');
+    if (countEl && data.count !== undefined) countEl.textContent = data.count;
+
+  } catch {
+    btnEl.classList.toggle('is-liked', wasLiked);
+    btnEl.setAttribute('aria-pressed', wasLiked);
+  }
+}
+
 // ── RECETAS ────────────────────────────────────
 const recetas = [
-  { titulo: "Avena con plátano y miel", categoria: "Desayuno", tiempo: "10 min", calorias: 320, descripcion: "Avena cremosa con rodajas de plátano, miel y canela. Fácil, nutritiva y lista en minutos.", ingredientes: ["Avena","Plátano","Miel","Leche","Canela"], foto: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400&q=80" },
-  { titulo: "Huevos revueltos con espinaca", categoria: "Desayuno", tiempo: "10 min", calorias: 210, descripcion: "Huevos revueltos suaves con espinacas salteadas y un toque de sal de ajo.", ingredientes: ["Huevos","Espinaca","Ajo","Aceite de oliva","Sal"], foto: "https://images.unsplash.com/photo-1510693206972-df098062cb71?w=400&q=80" },
-  { titulo: "Tostadas con aguacate", categoria: "Desayuno", tiempo: "5 min", calorias: 280, descripcion: "Pan integral tostado con aguacate machacado, limón y chile en polvo.", ingredientes: ["Pan integral","Aguacate","Limón","Chile en polvo","Sal"], foto: "https://images.unsplash.com/photo-1603046891744-1f057a4e1b2d?w=400&q=80" },
-  { titulo: "Ensalada de atún", categoria: "Comida", tiempo: "10 min", calorias: 250, descripcion: "Atún en agua con lechuga, jitomate, pepino y aderezo de limón. Fresca y alta en proteína.", ingredientes: ["Atún en agua","Lechuga","Jitomate","Pepino","Limón"], foto: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80" },
-  { titulo: "Pechuga de pollo a la plancha", categoria: "Comida", tiempo: "20 min", calorias: 300, descripcion: "Pechuga marinada con ajo, limón y hierbas, cocinada a la plancha.", ingredientes: ["Pechuga de pollo","Ajo","Limón","Orégano","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&q=80" },
-  { titulo: "Arroz con verduras", categoria: "Comida", tiempo: "25 min", calorias: 350, descripcion: "Arroz integral salteado con zanahoria, chícharo, elote y salsa de soya.", ingredientes: ["Arroz integral","Zanahoria","Chícharo","Elote","Salsa de soya"], foto: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&q=80" },
-  { titulo: "Sopa de lentejas", categoria: "Comida", tiempo: "30 min", calorias: 290, descripcion: "Sopa espesa de lentejas con jitomate, cebolla y comino. Reconfortante y llena de fibra.", ingredientes: ["Lentejas","Jitomate","Cebolla","Ajo","Comino"], foto: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80" },
-  { titulo: "Quesadillas de frijol", categoria: "Comida", tiempo: "15 min", calorias: 380, descripcion: "Tortillas de maíz con frijoles refritos y queso gratinado. Sencillas y sabrosas.", ingredientes: ["Tortillas de maíz","Frijoles refritos","Queso","Sal"], foto: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?w=400&q=80" },
-  { titulo: "Pasta con jitomate y albahaca", categoria: "Cena", tiempo: "20 min", calorias: 400, descripcion: "Pasta con salsa de jitomate fresco, ajo y albahaca. Simple, clásica e irresistible.", ingredientes: ["Pasta","Jitomate","Ajo","Albahaca","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=400&q=80" },
-  { titulo: "Crema de zanahoria", categoria: "Cena", tiempo: "25 min", calorias: 180, descripcion: "Crema suave de zanahoria con jengibre y caldo de verduras. Ligera y reconfortante.", ingredientes: ["Zanahoria","Cebolla","Jengibre","Caldo de verduras","Aceite"], foto: "https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=400&q=80" },
-  { titulo: "Tacos de huevo con nopales", categoria: "Cena", tiempo: "15 min", calorias: 260, descripcion: "Huevo revuelto con nopales en cubos y tortillas de maíz. Típico y nutritivo.", ingredientes: ["Huevos","Nopales","Cebolla","Chile serrano","Tortillas"], foto: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80" },
-  { titulo: "Yogur con granola y fresas", categoria: "Snack", tiempo: "5 min", calorias: 200, descripcion: "Yogur griego con granola crujiente y fresas frescas. Perfecto entre comidas.", ingredientes: ["Yogur griego","Granola","Fresas","Miel"], foto: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80" },
-  { titulo: "Manzana con mantequilla de cacahuate", categoria: "Snack", tiempo: "3 min", calorias: 190, descripcion: "Rodajas de manzana con mantequilla de cacahuate natural. Dulce, crujiente y satisfactorio.", ingredientes: ["Manzana","Mantequilla de cacahuate"], foto: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=400&q=80" },
-  { titulo: "Licuado verde", categoria: "Snack", tiempo: "5 min", calorias: 150, descripcion: "Espinaca, pepino, piña y agua de coco licuados. Refrescante y lleno de nutrientes.", ingredientes: ["Espinaca","Pepino","Piña","Agua de coco","Limón"], foto: "https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&q=80" },
-  { titulo: "Bowl de frutas con chía", categoria: "Snack", tiempo: "5 min", calorias: 170, descripcion: "Frutas de temporada con semillas de chía y jugo de naranja. Antioxidante y energizante.", ingredientes: ["Frutas de temporada","Semillas de chía","Jugo de naranja","Miel"], foto: "https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=400&q=80" }
+  { id: null, titulo: "Avena con plátano y miel", categoria: "Desayuno", tiempo: "10 min", calorias: 320, descripcion: "Avena cremosa con rodajas de plátano, miel y canela. Fácil, nutritiva y lista en minutos.", ingredientes: ["Avena","Plátano","Miel","Leche","Canela"], foto: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400&q=80" },
+  { id: null, titulo: "Huevos revueltos con espinaca", categoria: "Desayuno", tiempo: "10 min", calorias: 210, descripcion: "Huevos revueltos suaves con espinacas salteadas y un toque de sal de ajo.", ingredientes: ["Huevos","Espinaca","Ajo","Aceite de oliva","Sal"], foto: "https://images.unsplash.com/photo-1510693206972-df098062cb71?w=400&q=80" },
+  { id: null, titulo: "Tostadas con aguacate", categoria: "Desayuno", tiempo: "5 min", calorias: 280, descripcion: "Pan integral tostado con aguacate machacado, limón y chile en polvo.", ingredientes: ["Pan integral","Aguacate","Limón","Chile en polvo","Sal"], foto: "https://images.unsplash.com/photo-1603046891744-1f057a4e1b2d?w=400&q=80" },
+  { id: null, titulo: "Ensalada de atún", categoria: "Comida", tiempo: "10 min", calorias: 250, descripcion: "Atún en agua con lechuga, jitomate, pepino y aderezo de limón.", ingredientes: ["Atún en agua","Lechuga","Jitomate","Pepino","Limón"], foto: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80" },
+  { id: null, titulo: "Pechuga de pollo a la plancha", categoria: "Comida", tiempo: "20 min", calorias: 300, descripcion: "Pechuga marinada con ajo, limón y hierbas, cocinada a la plancha.", ingredientes: ["Pechuga de pollo","Ajo","Limón","Orégano","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&q=80" },
+  { id: null, titulo: "Arroz con verduras", categoria: "Comida", tiempo: "25 min", calorias: 350, descripcion: "Arroz integral salteado con zanahoria, chícharo, elote y salsa de soya.", ingredientes: ["Arroz integral","Zanahoria","Chícharo","Elote","Salsa de soya"], foto: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&q=80" },
+  { id: null, titulo: "Sopa de lentejas", categoria: "Comida", tiempo: "30 min", calorias: 290, descripcion: "Sopa espesa de lentejas con jitomate, cebolla y comino.", ingredientes: ["Lentejas","Jitomate","Cebolla","Ajo","Comino"], foto: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80" },
+  { id: null, titulo: "Quesadillas de frijol", categoria: "Comida", tiempo: "15 min", calorias: 380, descripcion: "Tortillas de maíz con frijoles refritos y queso gratinado.", ingredientes: ["Tortillas de maíz","Frijoles refritos","Queso","Sal"], foto: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?w=400&q=80" },
+  { id: null, titulo: "Pasta con jitomate y albahaca", categoria: "Cena", tiempo: "20 min", calorias: 400, descripcion: "Pasta con salsa de jitomate fresco, ajo y albahaca.", ingredientes: ["Pasta","Jitomate","Ajo","Albahaca","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=400&q=80" },
+  { id: null, titulo: "Crema de zanahoria", categoria: "Cena", tiempo: "25 min", calorias: 180, descripcion: "Crema suave de zanahoria con jengibre y caldo de verduras.", ingredientes: ["Zanahoria","Cebolla","Jengibre","Caldo de verduras","Aceite"], foto: "https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=400&q=80" },
+  { id: null, titulo: "Tacos de huevo con nopales", categoria: "Cena", tiempo: "15 min", calorias: 260, descripcion: "Huevo revuelto con nopales en cubos y tortillas de maíz.", ingredientes: ["Huevos","Nopales","Cebolla","Chile serrano","Tortillas"], foto: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80" },
+  { id: null, titulo: "Yogur con granola y fresas", categoria: "Snack", tiempo: "5 min", calorias: 200, descripcion: "Yogur griego con granola crujiente y fresas frescas.", ingredientes: ["Yogur griego","Granola","Fresas","Miel"], foto: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80" },
+  { id: null, titulo: "Manzana con mantequilla de cacahuate", categoria: "Snack", tiempo: "3 min", calorias: 190, descripcion: "Rodajas de manzana con mantequilla de cacahuate natural.", ingredientes: ["Manzana","Mantequilla de cacahuate"], foto: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=400&q=80" },
+  { id: null, titulo: "Licuado verde", categoria: "Snack", tiempo: "5 min", calorias: 150, descripcion: "Espinaca, pepino, piña y agua de coco licuados.", ingredientes: ["Espinaca","Pepino","Piña","Agua de coco","Limón"], foto: "https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&q=80" },
+  { id: null, titulo: "Bowl de frutas con chía", categoria: "Snack", tiempo: "5 min", calorias: 170, descripcion: "Frutas de temporada con semillas de chía y jugo de naranja.", ingredientes: ["Frutas de temporada","Semillas de chía","Jugo de naranja","Miel"], foto: "https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=400&q=80" }
 ];
 
-function initRecetas() {
+async function initRecetas() {
   const grid = document.getElementById('recetas-grid');
   if (!grid) return;
 
-  grid.innerHTML = recetas.map(r => `
-    <div class="recipe-card">
+  const user = getSession();
+  let lista = recetas;
+
+  try {
+    const res = await fetch(`${API_URL}/recetas`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.length) lista = data.map(r => ({
+        id:           r.id,
+        titulo:       r.titulo,
+        categoria:    r.categoria,
+        tiempo:       r.tiempo_min ? `${r.tiempo_min} min` : '—',
+        calorias:     r.calorias ?? '—',
+        descripcion:  r.descripcion || '',
+        ingredientes: Array.isArray(r.ingredientes) ? r.ingredientes : [],
+        foto:         r.imagen_url || ''
+      }));
+    }
+  } catch { /* usa fallback local */ }
+
+  let likedIds = new Set();
+  if (user) {
+    try {
+      const res  = await fetch(`${API_URL}/perfil/${user.id}`);
+      const data = await res.json();
+      likedIds   = new Set((data.likes_recetas || []).map(r => r?.id));
+    } catch { /* sin likes previos */ }
+  }
+
+  grid.innerHTML = lista.map((r, idx) => {
+    const itemId  = r.id ?? `local-${idx}`;
+    const isLiked = r.id && likedIds.has(r.id);
+    return `
+    <div class="recipe-card" data-id="${itemId}">
       <div class="recipe-card__img">
         <img src="${r.foto}" alt="${r.titulo}" loading="lazy" onerror="this.parentElement.innerHTML='🍽️'" />
+        ${r.id ? `
+        <button
+          class="like-btn ${isLiked ? 'is-liked' : ''}"
+          aria-label="Me gusta ${r.titulo}"
+          aria-pressed="${isLiked}"
+          data-tipo="receta"
+          data-id="${r.id}"
+        >
+          <svg viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>` : ''}
       </div>
       <div class="recipe-card__body">
         <div class="recipe-card__meta">
@@ -401,12 +504,331 @@ function initRecetas() {
         <h3>${r.titulo}</h3>
         <p>${r.descripcion}</p>
         <div class="recipe-card__ingredients">
-          ${r.ingredientes.map(i => `<span class="ingredient-tag">${i}</span>`).join('')}
+          ${(r.ingredientes || []).map(i => `<span class="ingredient-tag">${i}</span>`).join('')}
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.like-btn[data-tipo="receta"]').forEach(btn => {
+    btn.addEventListener('click', () => toggleLike('receta', btn.dataset.id, btn));
+  });
 }
+
+// ── FORO ───────────────────────────────────────
+async function initForo() {
+  const grid = document.getElementById('foro-grid');
+  if (!grid) return;
+
+  const user = getSession();
+  grid.innerHTML = '<p class="foro-loading">Cargando posts...</p>';
+
+  try {
+    const res  = await fetch(`${API_URL}/foro/posts`);
+    const data = await res.json();
+
+    if (!data.length) {
+      grid.innerHTML = '<p class="foro-empty">No hay publicaciones aún. ¡Sé el primero!</p>';
+      return;
+    }
+
+    let likedPostIds = new Set();
+    if (user) {
+      try {
+        const rp  = await fetch(`${API_URL}/perfil/${user.id}`);
+        const dp  = await rp.json();
+        likedPostIds = new Set((dp.likes_posts || []).map(p => p?.id));
+      } catch { /* sin likes previos */ }
+    }
+
+    grid.innerHTML = data.map(post => {
+      const isLiked = likedPostIds.has(post.id);
+      const autor   = post.users?.username || 'Anónimo';
+      const avatar  = autor.charAt(0).toUpperCase();
+      const fecha   = new Date(post.created_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
+      return `
+      <article class="foro-card" data-id="${post.id}">
+        <header class="foro-card__header">
+          <div class="foro-card__avatar">${avatar}</div>
+          <div>
+            <p class="foro-card__autor">${autor}</p>
+            <time class="foro-card__fecha">${fecha}</time>
+          </div>
+          ${post.categoria ? `<span class="blog-card__tag foro-card__tag">${post.categoria}</span>` : ''}
+        </header>
+        <h3 class="foro-card__titulo">${post.titulo}</h3>
+        <p class="foro-card__contenido">${post.contenido}</p>
+        <footer class="foro-card__footer">
+          <button
+            class="like-btn ${isLiked ? 'is-liked' : ''}"
+            aria-label="Me gusta este post"
+            aria-pressed="${isLiked}"
+            data-tipo="post"
+            data-id="${post.id}"
+          >
+            <svg viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span class="like-count">${post.likes_count || 0}</span>
+          </button>
+          <button class="btn btn--ghost btn--sm comentarios-toggle" data-id="${post.id}">
+            💬 Comentarios
+          </button>
+        </footer>
+        <div class="foro-comentarios" id="comentarios-${post.id}" hidden>
+          <div class="foro-comentarios__lista" id="lista-comentarios-${post.id}"></div>
+          ${user ? `
+          <div class="foro-comentarios__form">
+            <textarea id="input-comentario-${post.id}" placeholder="Escribe un comentario..." rows="2"></textarea>
+            <button class="btn btn--primary btn--sm enviar-comentario" data-id="${post.id}">Enviar</button>
+          </div>` : `<p class="foro-login-hint"><a href="#" data-auth="login">Inicia sesión</a> para comentar.</p>`}
+        </div>
+      </article>`;
+    }).join('');
+
+    // Likes en posts
+    grid.querySelectorAll('.like-btn[data-tipo="post"]').forEach(btn => {
+      btn.addEventListener('click', () => toggleLike('post', btn.dataset.id, btn));
+    });
+
+    // Toggle comentarios
+    grid.querySelectorAll('.comentarios-toggle').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id        = btn.dataset.id;
+        const container = document.getElementById(`comentarios-${id}`);
+        const lista     = document.getElementById(`lista-comentarios-${id}`);
+        const hidden    = container.hasAttribute('hidden');
+
+        if (hidden) {
+          container.removeAttribute('hidden');
+          lista.innerHTML = '<p class="cargando-comentarios">Cargando...</p>';
+          try {
+            const res  = await fetch(`${API_URL}/foro/posts/${id}/comentarios`);
+            const data = await res.json();
+            lista.innerHTML = data.length
+              ? data.map(c => `
+                <div class="comentario">
+                  <strong>${c.users?.username || 'Anónimo'}</strong>
+                  <p>${c.contenido}</p>
+                </div>`).join('')
+              : '<p class="sin-comentarios">Sé el primero en comentar.</p>';
+          } catch {
+            lista.innerHTML = '<p class="sin-comentarios">Error al cargar comentarios.</p>';
+          }
+        } else {
+          container.setAttribute('hidden', '');
+        }
+      });
+    });
+
+    // Enviar comentario
+    grid.querySelectorAll('.enviar-comentario').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id    = btn.dataset.id;
+        const input = document.getElementById(`input-comentario-${id}`);
+        const lista = document.getElementById(`lista-comentarios-${id}`);
+        const texto = input.value.trim();
+        if (!texto || !user) return;
+
+        btn.disabled    = true;
+        btn.textContent = 'Enviando...';
+        try {
+          const res = await fetch(`${API_URL}/foro/posts/${id}/comentarios`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: user.id, contenido: texto })
+          });
+          if (res.ok) {
+            input.value = '';
+            const div = document.createElement('div');
+            div.className = 'comentario';
+            div.innerHTML = `<strong>${user.username}</strong><p>${texto}</p>`;
+            lista.querySelector('.sin-comentarios')?.remove();
+            lista.appendChild(div);
+          }
+        } finally {
+          btn.disabled    = false;
+          btn.textContent = 'Enviar';
+        }
+      });
+    });
+
+    grid.querySelectorAll('[data-auth]').forEach(item => {
+      item.addEventListener('click', (e) => { e.preventDefault(); openModal(item.dataset.auth); });
+    });
+
+  } catch {
+    grid.innerHTML = '<p class="foro-empty">Error al cargar el foro. ¿Está corriendo el servidor?</p>';
+  }
+}
+
+// Nuevo post en el foro
+async function initNuevoPost() {
+  const form = document.getElementById('nuevo-post-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const user = getSession();
+    if (!user) return openModal('login');
+
+    const titulo    = document.getElementById('post-titulo')?.value.trim();
+    const contenido = document.getElementById('post-contenido')?.value.trim();
+    const categoria = document.getElementById('post-categoria')?.value;
+
+    if (!titulo || !contenido) return;
+
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled    = true;
+    btn.textContent = 'Publicando...';
+
+    try {
+      const res = await fetch(`${API_URL}/foro/posts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, titulo, contenido, categoria })
+      });
+      if (res.ok) {
+        form.reset();
+        initForo();
+      }
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Publicar';
+    }
+  });
+}
+
+// ── PERFIL ─────────────────────────────────────
+async function loadPerfil(userId) {
+  const user = getSession();
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setEl('perfil-nombre', 'Cargando...');
+  setEl('perfil-email',  '');
+  setEl('perfil-bio',    '');
+
+  const likesPostsEl   = document.getElementById('perfil-likes-posts');
+  const likesRecetasEl = document.getElementById('perfil-likes-recetas');
+  const misPostsEl     = document.getElementById('perfil-mis-posts');
+
+  if (likesPostsEl)   likesPostsEl.innerHTML   = '<p class="perfil-cargando">Cargando...</p>';
+  if (likesRecetasEl) likesRecetasEl.innerHTML = '<p class="perfil-cargando">Cargando...</p>';
+  if (misPostsEl)     misPostsEl.innerHTML     = '<p class="perfil-cargando">Cargando...</p>';
+
+  try {
+    const res  = await fetch(`${API_URL}/perfil/${userId}`);
+    if (!res.ok) throw new Error('No encontrado');
+    const data = await res.json();
+
+    const avatarEl = document.getElementById('perfil-avatar');
+    if (avatarEl) avatarEl.textContent = data.username?.charAt(0).toUpperCase() || '?';
+    setEl('perfil-nombre', data.username || '—');
+    setEl('perfil-email',  data.email    || '—');
+    setEl('perfil-bio',    data.bio      || 'Sin bio aún.');
+
+    if (misPostsEl) {
+      misPostsEl.innerHTML = (data.posts || []).length
+        ? data.posts.map(p => `
+            <div class="perfil-item">
+              <div class="perfil-item__info">
+                ${p.categoria ? `<span class="blog-card__tag">${p.categoria}</span>` : ''}
+                <p class="perfil-item__title">${p.titulo}</p>
+                <time class="perfil-item__date">${new Date(p.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}</time>
+              </div>
+            </div>`).join('')
+        : '<p class="perfil-empty">Aún no has publicado nada en el foro.</p>';
+    }
+
+    if (likesPostsEl) {
+      likesPostsEl.innerHTML = (data.likes_posts || []).length
+        ? data.likes_posts.map(p => `
+            <div class="perfil-item">
+              <div class="perfil-item__info">
+                ${p?.categoria ? `<span class="blog-card__tag">${p.categoria}</span>` : ''}
+                <p class="perfil-item__title">${p?.titulo || '—'}</p>
+              </div>
+              <svg class="perfil-item__heart" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </div>`).join('')
+        : '<p class="perfil-empty">Aún no has dado like a ningún post.</p>';
+    }
+
+    if (likesRecetasEl) {
+      likesRecetasEl.innerHTML = (data.likes_recetas || []).length
+        ? data.likes_recetas.map(r => `
+            <div class="perfil-item perfil-item--receta">
+              ${r?.imagen_url ? `<img src="${r.imagen_url}" alt="${r.titulo}" class="perfil-item__img" loading="lazy" onerror="this.style.display='none'">` : '<div class="perfil-item__img perfil-item__img--empty">🍽️</div>'}
+              <div class="perfil-item__info">
+                ${r?.categoria ? `<span class="blog-card__tag">${r.categoria}</span>` : ''}
+                <p class="perfil-item__title">${r?.titulo || '—'}</p>
+              </div>
+              <svg class="perfil-item__heart" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </div>`).join('')
+        : '<p class="perfil-empty">Aún no has dado like a ninguna receta.</p>';
+    }
+
+    const editBioBtn = document.getElementById('perfil-edit-bio-btn');
+    if (editBioBtn && user && user.id == userId) {
+      editBioBtn.hidden = false;
+      editBioBtn.addEventListener('click', () => abrirEditBio(data));
+    }
+
+  } catch {
+    setEl('perfil-nombre', 'Error al cargar el perfil');
+  }
+}
+
+function abrirEditBio(data) {
+  const bioEl = document.getElementById('perfil-bio');
+  if (!bioEl) return;
+
+  const textoActual = bioEl.textContent === 'Sin bio aún.' ? '' : bioEl.textContent;
+  bioEl.innerHTML = `
+    <textarea id="bio-edit-input" style="width:100%;resize:vertical;min-height:80px;">${textoActual}</textarea>
+    <div style="margin-top:0.5rem;display:flex;gap:0.5rem;">
+      <button class="btn btn--primary btn--sm" id="bio-save-btn">Guardar</button>
+      <button class="btn btn--ghost btn--sm" id="bio-cancel-btn">Cancelar</button>
+    </div>`;
+
+  document.getElementById('bio-cancel-btn').addEventListener('click', () => {
+    bioEl.textContent = textoActual || 'Sin bio aún.';
+  });
+
+  document.getElementById('bio-save-btn').addEventListener('click', async () => {
+    const nuevaBio = document.getElementById('bio-edit-input').value.trim();
+    const user     = getSession();
+    try {
+      const res = await fetch(`${API_URL}/perfil/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: nuevaBio })
+      });
+      if (res.ok) bioEl.textContent = nuevaBio || 'Sin bio aún.';
+    } catch {
+      bioEl.textContent = textoActual || 'Sin bio aún.';
+    }
+  });
+}
+
+// ── TABS DEL PERFIL ────────────────────────────
+document.addEventListener('click', (e) => {
+  const tab = e.target.closest('.perfil-tab');
+  if (!tab) return;
+
+  const target    = tab.dataset.target;
+  const allTabs   = document.querySelectorAll('.perfil-tab');
+  const allPanels = document.querySelectorAll('.perfil-panel');
+
+  allTabs.forEach(t => t.classList.remove('is-active'));
+  allPanels.forEach(p => { p.classList.remove('is-active'); p.hidden = true; });
+
+  tab.classList.add('is-active');
+  const panel = document.getElementById(target);
+  if (panel) { panel.hidden = false; panel.classList.add('is-active'); }
+});
 
 // ── INIT ───────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -420,6 +842,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavbarScroll();
   initBuscador();
   initRecetas();
+  initForo();
+  initNuevoPost();
 
   if (session) updateNavbarAuth(session);
 });

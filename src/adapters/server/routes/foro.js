@@ -40,11 +40,50 @@ router.post('/posts/:id/comentarios', async (req, res) => {
 });
 
 // POST like
+// POST /api/foro/posts/:id/like  →  toggle like (requiere user_id en body)
 router.post('/posts/:id/like', async (req, res) => {
-  const { data: post } = await supabase.from('posts').select('likes').eq('id', req.params.id).single();
-  const { data, error } = await supabase.from('posts').update({ likes: (post?.likes || 0) + 1 }).eq('id', req.params.id).select().single();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  const { user_id } = req.body;
+  const post_id = req.params.id;
+
+  if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
+
+  // ¿Ya existe el like?
+  const { data: existing } = await supabase
+    .from('likes_posts')
+    .select('id')
+    .eq('user_id', user_id)
+    .eq('post_id', post_id)
+    .single();
+
+  if (existing) {
+    // quitar like
+    await supabase.from('likes_posts').delete()
+      .eq('user_id', user_id).eq('post_id', post_id);
+    return res.json({ liked: false });
+  } else {
+    // dar like
+    const { error } = await supabase.from('likes_posts')
+      .insert([{ user_id, post_id }]);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ liked: true });
+  }
+});
+
+// GET /api/foro/posts/:id/likes?user_id=X  →  conteo + si el usuario ya dio like
+router.get('/posts/:id/likes', async (req, res) => {
+  const { user_id } = req.query;
+  const post_id = req.params.id;
+
+  const { count } = await supabase.from('likes_posts')
+    .select('*', { count: 'exact', head: true }).eq('post_id', post_id);
+
+  let liked = false;
+  if (user_id) {
+    const { data } = await supabase.from('likes_posts')
+      .select('id').eq('user_id', user_id).eq('post_id', post_id).single();
+    liked = !!data;
+  }
+  res.json({ count: count || 0, liked });
 });
 
 module.exports = router;

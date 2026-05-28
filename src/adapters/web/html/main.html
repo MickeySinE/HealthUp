@@ -142,44 +142,92 @@
     </div>
   </section>
 
-  <!-- ══ PÁGINA: BLOG ══ -->
+  <!-- ══ PÁGINA: FORO ══ -->
   <section class="page" id="page-blog" hidden>
     <div class="page-hero">
-      <p class="hero__eyebrow">Artículos · Consejos · Tendencias</p>
-      <h1 class="page-hero__title">Blog</h1>
-      <p class="page-hero__sub">Contenido actualizado sobre salud, nutrición y hábitos que transforman tu vida.</p>
+      <p class="hero__eyebrow">Comunidad · Salud · Experiencias</p>
+      <h1 class="page-hero__title">Foro</h1>
+      <p class="page-hero__sub">Comparte tu experiencia y aprende de otros.</p>
     </div>
-    <div class="page-content">
-      <h2 class="section-title">Artículos recientes</h2>
-      <div class="blog-list">
-        <div class="blog-card">
-          <div class="blog-card__meta">
-            <span class="blog-card__tag">Nutrición</span>
-            <span class="blog-card__date">Próximamente</span>
-          </div>
-          <h3>¿Cuánta proteína necesitas realmente?</h3>
-          <p>La ciencia detrás de los requerimientos proteicos según tu estilo de vida.</p>
+    <div class="foro-container" style="max-width:780px;margin:0 auto;padding:2rem 1rem;">
+
+      <form class="nuevo-post-form" id="nuevo-post-form">
+        <h3>Nueva publicación</h3>
+        <div class="form-field">
+          <input type="text" id="post-titulo" placeholder="Título del post" required />
         </div>
-        <div class="blog-card">
-          <div class="blog-card__meta">
-            <span class="blog-card__tag">Hábitos</span>
-            <span class="blog-card__date">Próximamente</span>
-          </div>
-          <h3>El poder del desayuno: mito o realidad</h3>
-          <p>Analizamos la evidencia científica sobre la comida más importante del día.</p>
+        <div class="form-field">
+          <select id="post-categoria">
+            <option value="">Sin categoría</option>
+            <option value="Nutrición">Nutrición</option>
+            <option value="Ejercicio">Ejercicio</option>
+            <option value="Bienestar">Bienestar</option>
+            <option value="Recetas">Recetas</option>
+            <option value="Pregunta">Pregunta</option>
+          </select>
         </div>
-        <div class="blog-card">
-          <div class="blog-card__meta">
-            <span class="blog-card__tag">Prevención</span>
-            <span class="blog-card__date">Próximamente</span>
-          </div>
-          <h3>Azúcar oculta: cómo identificarla en las etiquetas</h3>
-          <p>Aprende a leer etiquetas nutricionales y descubre el azúcar escondida.</p>
+        <div class="form-field">
+          <textarea id="post-contenido" placeholder="¿Qué quieres compartir?" rows="4" required></textarea>
         </div>
-      </div>
+        <button type="submit" class="btn btn--primary">Publicar</button>
+      </form>
+
+      <div class="foro-grid" id="foro-grid"></div>
     </div>
   </section>
+  <!-- ══════════════════════════════════════════
+     PÁGINA PERFIL — pegar dentro de main.html
+     como un <section class="page" id="page-perfil" hidden>
+     ══════════════════════════════════════════ -->
 
+  <section class="page" id="page-perfil" hidden>
+    <div class="perfil-container">
+
+      <!-- TARJETA PRINCIPAL -->
+      <div class="perfil-hero">
+        <div class="perfil-avatar-wrap">
+          <div class="perfil-avatar" id="perfil-avatar">?</div>
+        </div>
+        <div class="perfil-hero__info">
+          <h1 class="perfil-nombre" id="perfil-nombre">—</h1>
+          <p class="perfil-email" id="perfil-email">—</p>
+          <div class="perfil-bio-wrap">
+            <p class="perfil-bio" id="perfil-bio">Sin bio aún.</p>
+            <button class="btn btn--ghost btn--sm" id="perfil-edit-bio-btn" hidden>✏️ Editar bio</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="perfil-tabs">
+        <button class="perfil-tab is-active" data-target="tab-mis-posts">Mis posts</button>
+        <button class="perfil-tab" data-target="tab-likes-posts">Posts que me gustaron</button>
+        <button class="perfil-tab" data-target="tab-likes-recetas">Recetas que me gustaron</button>
+      </div>
+
+      <!-- PANEL: Mis posts -->
+      <div class="perfil-panel is-active" id="tab-mis-posts">
+        <div class="perfil-lista" id="perfil-mis-posts">
+          <p class="perfil-cargando">Cargando...</p>
+        </div>
+      </div>
+
+      <!-- PANEL: Likes posts -->
+      <div class="perfil-panel" id="tab-likes-posts" hidden>
+        <div class="perfil-lista" id="perfil-likes-posts">
+          <p class="perfil-cargando">Cargando...</p>
+        </div>
+      </div>
+
+      <!-- PANEL: Likes recetas -->
+      <div class="perfil-panel" id="tab-likes-recetas" hidden>
+        <div class="perfil-lista perfil-lista--recetas" id="perfil-likes-recetas">
+          <p class="perfil-cargando">Cargando...</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
   <!-- ══ PÁGINA: BÚSQUEDA ══ -->
   <section class="page" id="page-search" hidden>
     <div class="page-hero">

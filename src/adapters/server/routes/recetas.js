@@ -29,4 +29,30 @@ router.post('/', async (req, res) => {
   res.status(201).json(data);
 });
 
+// POST /api/recetas/:id/like  →  toggle like
+router.post('/:id/like', async (req, res) => {
+  const { user_id } = req.body;
+  const receta_id = req.params.id;
+
+  if (!user_id) return res.status(400).json({ error: 'user_id requerido' });
+
+  const { data: existing } = await supabase
+    .from('likes_recetas')
+    .select('id')
+    .eq('user_id', user_id)
+    .eq('receta_id', receta_id)
+    .single();
+
+  if (existing) {
+    await supabase.from('likes_recetas').delete()
+      .eq('user_id', user_id).eq('receta_id', receta_id);
+    return res.json({ liked: false });
+  } else {
+    const { error } = await supabase.from('likes_recetas')
+      .insert([{ user_id, receta_id }]);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ liked: true });
+  }
+});
+
 module.exports = router;
