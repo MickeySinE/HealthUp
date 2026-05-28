@@ -523,15 +523,16 @@ async function initForo() {
       return `
       <article class="foro-card" data-id="${post.id}">
         <header class="foro-card__header">
-          <div class="foro-card__avatar">${avatar}</div>
+          <div class="foro-card__avatar perfil-link" data-user-id="${post.user_id}" style="cursor:pointer">${avatar}</div>
           <div>
-            <p class="foro-card__autor">${autor}</p>
+          <p class="foro-card__autor perfil-link" data-user-id="${post.user_id}" style="cursor:pointer">${autor}</p>
             <time class="foro-card__fecha">${fecha}</time>
           </div>
           ${post.categoria ? `<span class="blog-card__tag foro-card__tag">${post.categoria}</span>` : ''}
         </header>
         <h3 class="foro-card__titulo">${post.titulo}</h3>
         <p class="foro-card__contenido">${post.contenido}</p>
+        ${post.imagen_url ? `<img src="${post.imagen_url}" alt="Imagen del post" class="foro-card__imagen" loading="lazy" />` : ''}
         <footer class="foro-card__footer">
           <button
             class="like-btn ${isLiked ? 'is-liked' : ''}"
@@ -548,6 +549,10 @@ async function initForo() {
           <button class="btn btn--ghost btn--sm comentarios-toggle" data-id="${post.id}">
             💬 Comentarios
           </button>
+          ${user && user.id == post.user_id ? `
+            <button class="btn btn--ghost btn--sm eliminar-post" data-id="${post.id}" style="color:#d04040;margin-left:auto">
+              🗑 Eliminar
+            </button>` : ''}
         </footer>
         <div class="foro-comentarios" id="comentarios-${post.id}" hidden>
           <div class="foro-comentarios__lista" id="lista-comentarios-${post.id}"></div>
@@ -559,6 +564,7 @@ async function initForo() {
         </div>
       </article>`;
     }).join('');
+
 
     // Likes en posts
     grid.querySelectorAll('.like-btn[data-tipo="post"]').forEach(btn => {
@@ -572,7 +578,6 @@ async function initForo() {
         const container = document.getElementById(`comentarios-${id}`);
         const lista     = document.getElementById(`lista-comentarios-${id}`);
         const hidden    = container.hasAttribute('hidden');
-
         if (hidden) {
           container.removeAttribute('hidden');
           lista.innerHTML = '<p class="cargando-comentarios">Cargando...</p>';
@@ -625,6 +630,37 @@ async function initForo() {
           btn.textContent = 'Enviar';
         }
       });
+      // Eliminar post
+      grid.querySelectorAll('.eliminar-post').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    btn.textContent = '¿Seguro? (clic para confirmar)';
+    btn.style.background = '#d04040';
+    btn.style.color = '#fff';
+
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      try {
+        const res = await fetch(`${API_URL}/foro/posts/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id })
+        });
+        if (res.ok) btn.closest('.foro-card').remove();
+      } catch { alert('Error al eliminar.'); }
+    };
+  });
+});
+      // Click en autor → perfil
+      grid.querySelectorAll('.perfil-link').forEach(el => {
+        el.addEventListener('click', () => {
+          const uid = el.dataset.userId;
+          if (!uid) return;
+          document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
+          document.getElementById('page-perfil').removeAttribute('hidden');
+          document.querySelectorAll('[data-page]').forEach(l => l.classList.toggle('is-active', l.dataset.page === 'perfil'));
+          loadPerfil(uid);
+        });
+      });
     });
 
     grid.querySelectorAll('[data-auth]').forEach(item => {
@@ -636,7 +672,6 @@ async function initForo() {
   }
 }
 
-// Nuevo post en el foro
 async function initNuevoPost() {
   const form = document.getElementById('nuevo-post-form');
   if (!form) return;
@@ -648,12 +683,9 @@ async function initNuevoPost() {
     e.preventDefault();
 
     const user = getSession();
-    if (!user) {
-      openModal('login');
-      return;
-    }
+    if (!user) { openModal('login'); return; }
 
-    const titulo = document.getElementById('post-titulo')?.value.trim();
+    const titulo    = document.getElementById('post-titulo')?.value.trim();
     const contenido = document.getElementById('post-contenido')?.value.trim();
     const categoria = document.getElementById('post-categoria')?.value || '';
 
@@ -667,25 +699,32 @@ async function initNuevoPost() {
     btn.textContent = 'Publicando...';
 
     try {
-      const res = await fetch(`${API_URL}/foro/posts`, {
+      let imagen_url = '';
+      const fileInput = document.getElementById('post-imagen-file');
+      if (fileInput?.files[0]) {
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('bucket', 'posts');
+        const upRes  = await fetch('http://localhost:3000/api/upload', { method: 'POST', body: formData });
+        const upData = await upRes.json();
+        imagen_url   = upData.url || '';
+      }
+
+      const res  = await fetch(`${API_URL}/foro/posts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.id, titulo, contenido, categoria })
+        body: JSON.stringify({ user_id: user.id, titulo, contenido, categoria, imagen_url })
       });
-
       const data = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        alert(data?.error || 'No se pudo publicar el post.');
-        return;
-      }
+      if (!res.ok) { alert(data?.error || 'No se pudo publicar el post.'); return; }
 
       form.reset();
       await initForo();
     } catch {
       alert('Error al conectar con el servidor.');
     } finally {
-      btn.disabled = false;
+      btn.disabled    = false;
       btn.textContent = originalText;
     }
   });
@@ -712,6 +751,17 @@ async function loadPerfil(userId) {
     const data = await res.json();
 
     const avatarEl = document.getElementById('perfil-avatar');
+    const fotoEl   = document.getElementById('perfil-foto');
+    if (data.foto_url && fotoEl) {
+      fotoEl.src          = data.foto_url;
+      fotoEl.style.display = '';
+      if (avatarEl) avatarEl.style.display = 'none';
+    } else {
+      if (fotoEl)    fotoEl.style.display    = 'none';
+      if (avatarEl) { avatarEl.style.display = ''; avatarEl.textContent = data.username?.charAt(0).toUpperCase() || '?'; }
+    }
+
+    
     if (avatarEl) avatarEl.textContent = data.username?.charAt(0).toUpperCase() || '?';
     setEl('perfil-nombre', data.username || '—');
     setEl('perfil-email',  data.email    || '—');
@@ -719,14 +769,14 @@ async function loadPerfil(userId) {
 
     if (misPostsEl) {
       misPostsEl.innerHTML = (data.posts || []).length
-        ? data.posts.map(p => `
-            <div class="perfil-item">
-              <div class="perfil-item__info">
-                ${p.categoria ? `<span class="blog-card__tag">${p.categoria}</span>` : ''}
-                <p class="perfil-item__title">${p.titulo}</p>
-                <time class="perfil-item__date">${new Date(p.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}</time>
-              </div>
-            </div>`).join('')
+          ? data.posts.map(p => `
+              <div class="perfil-item" data-post-id="${p.id}" style="cursor:pointer">
+                <div class="perfil-item__info">
+                  ${p.categoria ? `<span class="blog-card__tag">${p.categoria}</span>` : ''}
+                  <p class="perfil-item__title">${p.titulo}</p>
+                  <time class="perfil-item__date">${new Date(p.created_at).toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'})}</time>
+                </div>
+              </div>`).join('')
         : '<p class="perfil-empty">Aún no has publicado nada en el foro.</p>';
     }
 
@@ -766,6 +816,56 @@ async function loadPerfil(userId) {
       editBioBtn.hidden = false;
       editBioBtn.addEventListener('click', () => abrirEditBio(data));
     }
+
+    // ── FOTO DE PERFIL ── AGREGA ESTO AQUÍ ──
+    const subirFotoBtn  = document.getElementById('perfil-subir-foto-btn');
+    const fotoFileInput = document.getElementById('foto-file-input');
+    if (subirFotoBtn && user && user.id == userId) {
+      subirFotoBtn.hidden = false;
+      subirFotoBtn.onclick = () => fotoFileInput.click();
+      fotoFileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('bucket', 'avatars');
+        subirFotoBtn.textContent = 'Subiendo...';
+        subirFotoBtn.disabled    = true;
+        try {
+          const res  = await fetch('http://localhost:3000/api/upload', { method: 'POST', body: formData });
+          const upData = await res.json();
+          if (upData.url) {
+            await fetch(`${API_URL}/perfil/${user.id}`, {
+              method: 'PUT', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ foto_url: upData.url })
+            });
+            if (fotoEl) { fotoEl.src = upData.url; fotoEl.style.display = ''; }
+            if (avatarEl) avatarEl.style.display = 'none';
+          }
+        } finally {
+          subirFotoBtn.textContent = '📷 Cambiar foto';
+          subirFotoBtn.disabled    = false;
+        }
+      };
+    }
+    // Clicks en posts del perfil → ir al foro
+    document.querySelectorAll('[data-post-id]').forEach(el => {
+      el.addEventListener('click', async () => {
+        const postId = el.dataset.postId;
+        document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
+        document.getElementById('page-blog').removeAttribute('hidden');
+        document.querySelectorAll('[data-page]').forEach(l => l.classList.toggle('is-active', l.dataset.page === 'blog'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        await initForo();
+        await initNuevoPost();
+        const card = document.querySelector(`.foro-card[data-id="${postId}"]`);
+        if (card) {
+          card.style.outline = '2px solid var(--green-400)';
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => card.style.outline = '', 2000);
+        }
+      });
+    });
 
   } catch {
     setEl('perfil-nombre', 'Error al cargar el perfil');

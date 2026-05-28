@@ -169,6 +169,10 @@
         <div class="form-field">
           <textarea id="post-contenido" placeholder="¿Qué quieres compartir?" rows="4" required></textarea>
         </div>
+        <div class="form-field">
+          <label style="font-size:0.85rem;color:var(--stone-600);display:block;margin-bottom:4px">Imagen (opcional)</label>
+          <input type="file" id="post-imagen-file" accept="image/*" />
+        </div>
         <button type="submit" class="btn btn--primary">Publicar</button>
       </form>
 
@@ -186,7 +190,11 @@
       <!-- TARJETA PRINCIPAL -->
       <div class="perfil-hero">
         <div class="perfil-avatar-wrap">
-          <div class="perfil-avatar" id="perfil-avatar">?</div>
+          <img id="perfil-foto" src="https://api.dicebear.com/7.x/thumbs/svg?seed=default"
+              alt="Avatar" class="perfil-foto" />
+          <div class="perfil-avatar" id="perfil-avatar" style="display:none">?</div>
+          <input type="file" id="foto-file-input" accept="image/*" style="display:none" />
+          <button class="btn btn--ghost btn--sm" id="perfil-subir-foto-btn" hidden>📷 Cambiar foto</button>
         </div>
         <div class="perfil-hero__info">
           <h1 class="perfil-nombre" id="perfil-nombre">—</h1>

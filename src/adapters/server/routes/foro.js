@@ -96,4 +96,16 @@ router.get('/posts/:id/likes', async (req, res) => {
   res.json({ count: count || 0, liked });
 });
 
+// DELETE post propio
+router.delete('/posts/:id', async (req, res) => {
+  const { user_id } = req.body;
+  const { data: post } = await supabase.from('posts').select('user_id').eq('id', req.params.id).single();
+  if (!post || String(post.user_id) !== String(user_id)) return res.status(403).json({ error: 'No autorizado' });
+  await supabase.from('comentarios').delete().eq('post_id', req.params.id);
+  await supabase.from('likes_posts').delete().eq('post_id', req.params.id);
+  const { error } = await supabase.from('posts').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
 module.exports = router;
