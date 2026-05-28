@@ -358,43 +358,39 @@ function setLikedRecetas(ids) {
 
 async function toggleLike(tipo, itemId, btnEl) {
   const user = getSession();
-  if (!user) { openModal('login'); return; }
+  if (!user) {
+    openModal('login');
+    return;
+  }
 
   const url = tipo === 'post'
     ? `${API_URL}/foro/posts/${itemId}/like`
     : `${API_URL}/recetas/${itemId}/like`;
 
-  const countEl     = btnEl.querySelector('.like-count');
-  const currentCount = countEl ? Number(countEl.textContent || '0') : 0;
-  const wasLiked    = btnEl.classList.contains('is-liked');
-
-  // UI optimista
-  btnEl.classList.toggle('is-liked', !wasLiked);
-  btnEl.setAttribute('aria-pressed', String(!wasLiked));
-  const svg = btnEl.querySelector('svg');
-  if (svg) svg.setAttribute('fill', !wasLiked ? 'currentColor' : 'none');
-  if (countEl) countEl.textContent = String(Math.max(0, currentCount + (wasLiked ? -1 : 1)));
-
   try {
-    const res  = await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.id })
     });
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    if (!res.ok) throw new Error(data.error || 'Error al actualizar like');
 
     btnEl.classList.toggle('is-liked', !!data.liked);
     btnEl.setAttribute('aria-pressed', String(!!data.liked));
-    if (svg) svg.setAttribute('fill', data.liked ? 'currentColor' : 'none');
-    if (countEl && typeof data.count !== 'undefined') countEl.textContent = String(data.count);
 
-  } catch {
-    // revertir UI
-    btnEl.classList.toggle('is-liked', wasLiked);
-    btnEl.setAttribute('aria-pressed', String(wasLiked));
-    if (svg) svg.setAttribute('fill', wasLiked ? 'currentColor' : 'none');
-    if (countEl) countEl.textContent = String(currentCount);
+    const svg = btnEl.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('fill', data.liked ? 'currentColor' : 'none');
+    }
+
+    const countEl = btnEl.querySelector('.like-count');
+    if (countEl) {
+      countEl.textContent = String(data.count ?? 0);
+    }
+  } catch (err) {
+    console.error('toggleLike error:', err);
   }
 }
 
@@ -505,46 +501,48 @@ async function initForo() {
   grid.innerHTML = '<p class="foro-loading">Cargando posts...</p>';
 
   try {
-    const res  = await fetch(`${API_URL}/foro/posts`);
+    const url = user
+      ? `${API_URL}/foro/posts?user_id=${encodeURIComponent(user.id)}`
+      : `${API_URL}/foro/posts`;
+
+    const res = await fetch(url);
     const data = await res.json();
 
-    if (!data.length) {
+    if (!Array.isArray(data) || !data.length) {
       grid.innerHTML = '<p class="foro-empty">No hay publicaciones aún. ¡Sé el primero!</p>';
       return;
     }
 
-    let likedPostIds = new Set();
-    if (user) {
-      try {
-        const rp  = await fetch(`${API_URL}/perfil/${user.id}`);
-        const dp  = await rp.json();
-        likedPostIds = new Set((dp.likes_posts || []).map(p => p?.id));
-      } catch { /* sin likes previos */ }
-    }
-
     grid.innerHTML = data.map(post => {
-      const isLiked = likedPostIds.has(post.id);
-      const autor   = post.users?.username || 'Anónimo';
-      const avatarSrc = post.users?.foto_url;      
-      const fecha   = new Date(post.created_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
+      const isLiked = !!post.liked;
+      const autor = post.users?.username || 'Anónimo';
+      const avatarSrc = post.users?.foto_url;
+      const fecha = new Date(post.created_at).toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+
       return `
       <article class="foro-card" data-id="${post.id}">
         <header class="foro-card__header">
           <div class="foro-card__avatar perfil-link" data-user-id="${post.user_id}" style="cursor:pointer;overflow:hidden;">
-            ${avatarSrc 
+            ${avatarSrc
               ? `<img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
               : autor.charAt(0).toUpperCase()
             }
           </div>
           <div>
-          <p class="foro-card__autor perfil-link" data-user-id="${post.user_id}" style="cursor:pointer">${autor}</p>
+            <p class="foro-card__autor perfil-link" data-user-id="${post.user_id}" style="cursor:pointer">${autor}</p>
             <time class="foro-card__fecha">${fecha}</time>
           </div>
           ${post.categoria ? `<span class="blog-card__tag foro-card__tag">${post.categoria}</span>` : ''}
         </header>
+
         <h3 class="foro-card__titulo">${post.titulo}</h3>
         <p class="foro-card__contenido">${post.contenido}</p>
         ${post.imagen_url ? `<img src="${post.imagen_url}" alt="Imagen del post" class="foro-card__imagen" loading="lazy" />` : ''}
+
         <footer class="foro-card__footer">
           <button
             class="like-btn ${isLiked ? 'is-liked' : ''}"
@@ -556,45 +554,47 @@ async function initForo() {
             <svg viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
-            <span class="like-count">${post.likes_posts?.[0]?.count ?? 0}</span>
+            <span class="like-count">${post.likes_count ?? 0}</span>
           </button>
+
           <button class="btn btn--ghost btn--sm comentarios-toggle" data-id="${post.id}">
             💬 Comentarios
           </button>
-          ${user && user.id == post.user_id ? `
+
+          ${user && String(user.id) === String(post.user_id) ? `
             <button class="btn btn--ghost btn--sm eliminar-post" data-id="${post.id}" style="color:#d04040;margin-left:auto">
               🗑 Eliminar
             </button>` : ''}
         </footer>
+
         <div class="foro-comentarios" id="comentarios-${post.id}" hidden>
           <div class="foro-comentarios__lista" id="lista-comentarios-${post.id}"></div>
           ${user ? `
-          <div class="foro-comentarios__form">
-            <textarea id="input-comentario-${post.id}" placeholder="Escribe un comentario..." rows="2"></textarea>
-            <button class="btn btn--primary btn--sm enviar-comentario" data-id="${post.id}">Enviar</button>
-          </div>` : `<p class="foro-login-hint"><a href="#" data-auth="login">Inicia sesión</a> para comentar.</p>`}
+            <div class="foro-comentarios__form">
+              <textarea id="input-comentario-${post.id}" placeholder="Escribe un comentario..." rows="2"></textarea>
+              <button class="btn btn--primary btn--sm enviar-comentario" data-id="${post.id}">Enviar</button>
+            </div>
+          ` : `<p class="foro-login-hint"><a href="#" data-auth="login">Inicia sesión</a> para comentar.</p>`}
         </div>
       </article>`;
     }).join('');
 
-
-    // Likes en posts
     grid.querySelectorAll('.like-btn[data-tipo="post"]').forEach(btn => {
       btn.addEventListener('click', () => toggleLike('post', btn.dataset.id, btn));
     });
 
-    // Toggle comentarios
     grid.querySelectorAll('.comentarios-toggle').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id        = btn.dataset.id;
+        const id = btn.dataset.id;
         const container = document.getElementById(`comentarios-${id}`);
-        const lista     = document.getElementById(`lista-comentarios-${id}`);
-        const hidden    = container.hasAttribute('hidden');
+        const lista = document.getElementById(`lista-comentarios-${id}`);
+        const hidden = container.hasAttribute('hidden');
+
         if (hidden) {
           container.removeAttribute('hidden');
           lista.innerHTML = '<p class="cargando-comentarios">Cargando...</p>';
           try {
-            const res  = await fetch(`${API_URL}/foro/posts/${id}/comentarios`);
+            const res = await fetch(`${API_URL}/foro/posts/${id}/comentarios`);
             const data = await res.json();
             lista.innerHTML = data.length
               ? data.map(c => `
@@ -612,16 +612,15 @@ async function initForo() {
       });
     });
 
-    // Enviar comentario
     grid.querySelectorAll('.enviar-comentario').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id    = btn.dataset.id;
+        const id = btn.dataset.id;
         const input = document.getElementById(`input-comentario-${id}`);
         const lista = document.getElementById(`lista-comentarios-${id}`);
         const texto = input.value.trim();
         if (!texto || !user) return;
 
-        btn.disabled    = true;
+        btn.disabled = true;
         btn.textContent = 'Enviando...';
         try {
           const res = await fetch(`${API_URL}/foro/posts/${id}/comentarios`, {
@@ -629,6 +628,7 @@ async function initForo() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: user.id, contenido: texto })
           });
+
           if (res.ok) {
             input.value = '';
             const div = document.createElement('div');
@@ -638,48 +638,71 @@ async function initForo() {
             lista.appendChild(div);
           }
         } finally {
-          btn.disabled    = false;
+          btn.disabled = false;
           btn.textContent = 'Enviar';
         }
       });
-      // Eliminar post
-    grid.querySelectorAll('.eliminar-post').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.textContent = '¿Seguro? (clic para confirmar)';
-        btn.style.background = '#d04040';
-        btn.style.color = '#fff';
+    });
 
-        btn.onclick = async () => {
-          const id = btn.dataset.id;
-          try {
-            const res = await fetch(`${API_URL}/foro/posts/${id}`, {
-              method: 'DELETE',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user_id: user.id })
-            });
-            if (res.ok) btn.closest('.foro-card').remove();
-          } catch { alert('Error al eliminar.'); }
-        };
+    grid.querySelectorAll('.eliminar-post').forEach(btn => {
+      let confirmando = false;
+
+      btn.addEventListener('click', async () => {
+        if (!confirmando) {
+          confirmando = true;
+          btn.textContent = '¿Seguro? (confirmar)';
+          btn.style.background = '#d04040';
+          btn.style.color = '#fff';
+
+          setTimeout(() => {
+            if (confirmando) {
+              confirmando = false;
+              btn.textContent = '🗑 Eliminar';
+              btn.style.background = '';
+              btn.style.color = '#d04040';
+            }
+          }, 3000);
+          return;
+        }
+
+        const id = btn.dataset.id;
+        try {
+          const res = await fetch(`${API_URL}/foro/posts/${id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: user.id })
+          });
+          if (res.ok) btn.closest('.foro-card')?.remove();
+        } catch {
+          alert('Error al eliminar.');
+        }
       });
     });
-      // Click en autor → perfil
-      grid.querySelectorAll('.perfil-link').forEach(el => {
-        el.addEventListener('click', () => {
-          const uid = el.dataset.userId;
-          if (!uid) return;
-          document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
-          document.getElementById('page-perfil').removeAttribute('hidden');
-          document.querySelectorAll('[data-page]').forEach(l => l.classList.toggle('is-active', l.dataset.page === 'perfil'));
-          loadPerfil(uid);
+
+    grid.querySelectorAll('.perfil-link').forEach(el => {
+      el.addEventListener('click', () => {
+        const uid = el.dataset.userId;
+        if (!uid) return;
+
+        document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
+        document.getElementById('page-perfil')?.removeAttribute('hidden');
+        document.querySelectorAll('[data-page]').forEach(l => {
+          l.classList.toggle('is-active', l.dataset.page === 'perfil');
         });
+
+        loadPerfil(uid);
       });
     });
 
     grid.querySelectorAll('[data-auth]').forEach(item => {
-      item.addEventListener('click', (e) => { e.preventDefault(); openModal(item.dataset.auth); });
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        openModal(item.dataset.auth);
+      });
     });
 
-  } catch {
+  } catch (err) {
+    console.error('initForo error:', err);
     grid.innerHTML = '<p class="foro-empty">Error al cargar el foro. ¿Está corriendo el servidor?</p>';
   }
 }
@@ -761,7 +784,9 @@ async function loadPerfil(userId) {
     const res  = await fetch(`${API_URL}/perfil/${userId}`);
     if (!res.ok) throw new Error('No encontrado');
     const data = await res.json();
-
+    console.log('perfil data:', data);
+    console.log('likes_posts:', data.likes_posts);
+    console.log('likes_recetas:', data.likes_recetas);
     const avatarEl = document.getElementById('perfil-avatar');
     const fotoEl   = document.getElementById('perfil-foto');
     if (data.foto_url && fotoEl) {

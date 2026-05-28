@@ -5,24 +5,43 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 
 // GET posts
 router.get('/posts', async (req, res) => {
-  const { q, categoria } = req.query;
+  const { q, categoria, user_id } = req.query;
+
   let query = supabase
     .from('posts')
     .select('*, users(username, foto_url)')
     .order('created_at', { ascending: false });
+
   if (q) query = query.ilike('titulo', `%${q}%`);
   if (categoria) query = query.eq('categoria', categoria);
 
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
 
-  // Contar likes reales por cada post
-  const postsConLikes = await Promise.all(data.map(async post => {
+  const postsConLikes = await Promise.all((data || []).map(async (post) => {
     const { count } = await supabase
       .from('likes_posts')
       .select('*', { count: 'exact', head: true })
       .eq('post_id', post.id);
-    return { ...post, likes_count: count || 0 };
+
+    let liked = false;
+
+    if (user_id) {
+      const { data: likedRow } = await supabase
+        .from('likes_posts')
+        .select('id')
+        .eq('post_id', post.id)
+        .eq('user_id', user_id)
+        .maybeSingle();
+
+      liked = !!likedRow;
+    }
+
+    return {
+      ...post,
+      likes_count: count || 0,
+      liked
+    };
   }));
 
   res.json(postsConLikes);
