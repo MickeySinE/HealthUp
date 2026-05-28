@@ -518,12 +518,17 @@ async function initForo() {
     grid.innerHTML = data.map(post => {
       const isLiked = likedPostIds.has(post.id);
       const autor   = post.users?.username || 'Anónimo';
-      const avatar  = autor.charAt(0).toUpperCase();
+      const avatarSrc = post.users?.foto_url;      
       const fecha   = new Date(post.created_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
       return `
       <article class="foro-card" data-id="${post.id}">
         <header class="foro-card__header">
-          <div class="foro-card__avatar perfil-link" data-user-id="${post.user_id}" style="cursor:pointer">${avatar}</div>
+          <div class="foro-card__avatar perfil-link" data-user-id="${post.user_id}" style="cursor:pointer;overflow:hidden;">
+            ${avatarSrc 
+              ? `<img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
+              : autor.charAt(0).toUpperCase()
+            }
+          </div>
           <div>
           <p class="foro-card__autor perfil-link" data-user-id="${post.user_id}" style="cursor:pointer">${autor}</p>
             <time class="foro-card__fecha">${fecha}</time>
