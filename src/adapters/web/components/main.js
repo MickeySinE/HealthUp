@@ -266,7 +266,7 @@ function initAuthModal() {
       });
       const data = await res.json();
       if (!res.ok) return showError('register-error', data.error || 'Error al crear la cuenta.');
-      switchTab('login');
+      showError('register-error', 'Revisa tu correo para confirmar tu cuenta.');
     } catch {
       showError('register-error', 'No se pudo conectar con el servidor.');
     } finally {
@@ -360,32 +360,19 @@ async function toggleLike(tipo, itemId, btnEl) {
   const user = getSession();
   if (!user) { openModal('login'); return; }
 
-  const countEl    = btnEl.querySelector('.like-count');
+  const url = tipo === 'post'
+    ? `${API_URL}/foro/posts/${itemId}/like`
+    : `${API_URL}/recetas/${itemId}/like`;
+
+  const countEl     = btnEl.querySelector('.like-count');
   const currentCount = countEl ? Number(countEl.textContent || '0') : 0;
-  const wasLiked   = btnEl.classList.contains('is-liked');
-
-  if (tipo === 'receta') {
-    // Likes locales en localStorage
-    const liked = getLikedRecetas();
-    const newLiked = wasLiked
-      ? liked.filter(id => id !== itemId)
-      : [...liked, itemId];
-    setLikedRecetas(newLiked);
-
-    btnEl.classList.toggle('is-liked', !wasLiked);
-    btnEl.setAttribute('aria-pressed', String(!wasLiked));
-    // Actualizar ícono del corazón
-    const svg = btnEl.querySelector('svg');
-    if (svg) svg.setAttribute('fill', !wasLiked ? 'currentColor' : 'none');
-    return;
-  }
-
-  // Posts — llamada al backend
-  const url = `${API_URL}/foro/posts/${itemId}/like`;
+  const wasLiked    = btnEl.classList.contains('is-liked');
 
   // UI optimista
   btnEl.classList.toggle('is-liked', !wasLiked);
   btnEl.setAttribute('aria-pressed', String(!wasLiked));
+  const svg = btnEl.querySelector('svg');
+  if (svg) svg.setAttribute('fill', !wasLiked ? 'currentColor' : 'none');
   if (countEl) countEl.textContent = String(Math.max(0, currentCount + (wasLiked ? -1 : 1)));
 
   try {
@@ -395,19 +382,18 @@ async function toggleLike(tipo, itemId, btnEl) {
       body: JSON.stringify({ user_id: user.id })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Error al dar like');
+    if (!res.ok) throw new Error(data.error);
 
     btnEl.classList.toggle('is-liked', !!data.liked);
     btnEl.setAttribute('aria-pressed', String(!!data.liked));
-    if (countEl) countEl.textContent = String(
-      typeof data.count !== 'undefined'
-        ? data.count
-        : Math.max(0, currentCount + (data.liked ? 1 : -1))
-    );
+    if (svg) svg.setAttribute('fill', data.liked ? 'currentColor' : 'none');
+    if (countEl && typeof data.count !== 'undefined') countEl.textContent = String(data.count);
+
   } catch {
     // revertir UI
     btnEl.classList.toggle('is-liked', wasLiked);
     btnEl.setAttribute('aria-pressed', String(wasLiked));
+    if (svg) svg.setAttribute('fill', wasLiked ? 'currentColor' : 'none');
     if (countEl) countEl.textContent = String(currentCount);
   }
 }
@@ -460,7 +446,15 @@ async function initRecetas() {
     }
   } catch { /* usa fallback local */ }
 
-  const likedIds = new Set(getLikedRecetas());
+  // Likes desde el backend, no localStorage
+  let likedIds = new Set();
+  if (user) {
+    try {
+      const res  = await fetch(`${API_URL}/perfil/${user.id}`);
+      const data = await res.json();
+      likedIds   = new Set((data.likes_recetas || []).map(r => r?.id ?? r));
+    } catch { }
+  }
 
   grid.innerHTML = lista.map((r, idx) => {
     const itemId  = r.id ?? `local-${idx}`;
@@ -562,7 +556,7 @@ async function initForo() {
             <svg viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
-            <span class="like-count">${post.likes_count || 0}</span>
+            <span class="like-count">${post.likes_posts?.[0]?.count ?? 0}</span>
           </button>
           <button class="btn btn--ghost btn--sm comentarios-toggle" data-id="${post.id}">
             💬 Comentarios
@@ -816,7 +810,7 @@ async function loadPerfil(userId) {
     // REEMPLAZA el bloque de likesRecetasEl en loadPerfil con esto:
 // ─────────────────────────────────────────────
     if (likesRecetasEl) {
-      const likedIds    = getLikedRecetas();
+      const likedIds     = (data.likes_recetas || []);
       const likedRecetas = recetas.filter(r => likedIds.includes(r.id));
 
       likesRecetasEl.innerHTML = likedRecetas.length
@@ -837,7 +831,6 @@ async function loadPerfil(userId) {
             </div>`).join('')
         : '<p class="perfil-empty">Aún no has dado like a ninguna receta.</p>';
 
-      // Click en receta del perfil → ir a recetas y resaltar la card
       likesRecetasEl.querySelectorAll('[data-receta-id]').forEach(el => {
         el.addEventListener('click', () => {
           const rid = el.dataset.recetaId;
@@ -845,8 +838,6 @@ async function loadPerfil(userId) {
           document.getElementById('page-recetas').removeAttribute('hidden');
           document.querySelectorAll('[data-page]').forEach(l => l.classList.toggle('is-active', l.dataset.page === 'recetas'));
           window.scrollTo({ top: 0, behavior: 'smooth' });
-
-          // Resaltar la card
           setTimeout(() => {
             const card = document.querySelector(`.recipe-card[data-id="${rid}"]`);
             if (card) {
