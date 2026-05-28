@@ -344,20 +344,44 @@ function initBuscador() {
 }
 
 // ── LIKES — TOGGLE (foro y recetas) ───────────
+// ── LIKES ──────────────────────────────────────
+// Likes de recetas se guardan en localStorage (recetas hardcodeadas)
+// Likes de posts se mandan al backend
+
+function getLikedRecetas() {
+  return JSON.parse(localStorage.getItem('healthup_liked_recetas') || '[]');
+}
+
+function setLikedRecetas(ids) {
+  localStorage.setItem('healthup_liked_recetas', JSON.stringify(ids));
+}
+
 async function toggleLike(tipo, itemId, btnEl) {
   const user = getSession();
-  if (!user) {
-    openModal('login');
+  if (!user) { openModal('login'); return; }
+
+  const countEl    = btnEl.querySelector('.like-count');
+  const currentCount = countEl ? Number(countEl.textContent || '0') : 0;
+  const wasLiked   = btnEl.classList.contains('is-liked');
+
+  if (tipo === 'receta') {
+    // Likes locales en localStorage
+    const liked = getLikedRecetas();
+    const newLiked = wasLiked
+      ? liked.filter(id => id !== itemId)
+      : [...liked, itemId];
+    setLikedRecetas(newLiked);
+
+    btnEl.classList.toggle('is-liked', !wasLiked);
+    btnEl.setAttribute('aria-pressed', String(!wasLiked));
+    // Actualizar ícono del corazón
+    const svg = btnEl.querySelector('svg');
+    if (svg) svg.setAttribute('fill', !wasLiked ? 'currentColor' : 'none');
     return;
   }
 
-  const url = tipo === 'post'
-    ? `${API_URL}/foro/posts/${itemId}/like`
-    : `${API_URL}/recetas/${itemId}/like`;
-
-  const countEl = btnEl.querySelector('.like-count');
-  const currentCount = countEl ? Number(countEl.textContent || '0') : 0;
-  const wasLiked = btnEl.classList.contains('is-liked');
+  // Posts — llamada al backend
+  const url = `${API_URL}/foro/posts/${itemId}/like`;
 
   // UI optimista
   btnEl.classList.toggle('is-liked', !wasLiked);
@@ -365,7 +389,7 @@ async function toggleLike(tipo, itemId, btnEl) {
   if (countEl) countEl.textContent = String(Math.max(0, currentCount + (wasLiked ? -1 : 1)));
 
   try {
-    const res = await fetch(url, {
+    const res  = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.id })
@@ -375,14 +399,11 @@ async function toggleLike(tipo, itemId, btnEl) {
 
     btnEl.classList.toggle('is-liked', !!data.liked);
     btnEl.setAttribute('aria-pressed', String(!!data.liked));
-
-    if (countEl) {
-      if (typeof data.count !== 'undefined') {
-        countEl.textContent = String(data.count);
-      } else {
-        countEl.textContent = String(Math.max(0, currentCount + (data.liked ? 1 : -1)));
-      }
-    }
+    if (countEl) countEl.textContent = String(
+      typeof data.count !== 'undefined'
+        ? data.count
+        : Math.max(0, currentCount + (data.liked ? 1 : -1))
+    );
   } catch {
     // revertir UI
     btnEl.classList.toggle('is-liked', wasLiked);
@@ -393,29 +414,28 @@ async function toggleLike(tipo, itemId, btnEl) {
 
 // ── RECETAS ────────────────────────────────────
 const recetas = [
-  { id: null, titulo: "Avena con plátano y miel", categoria: "Desayuno", tiempo: "10 min", calorias: 320, descripcion: "Avena cremosa con rodajas de plátano, miel y canela. Fácil, nutritiva y lista en minutos.", ingredientes: ["Avena","Plátano","Miel","Leche","Canela"], foto: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400&q=80" },
-  { id: null, titulo: "Huevos revueltos con espinaca", categoria: "Desayuno", tiempo: "10 min", calorias: 210, descripcion: "Huevos revueltos suaves con espinacas salteadas y un toque de sal de ajo.", ingredientes: ["Huevos","Espinaca","Ajo","Aceite de oliva","Sal"], foto: "https://images.unsplash.com/photo-1510693206972-df098062cb71?w=400&q=80" },
-  { id: null, titulo: "Tostadas con aguacate", categoria: "Desayuno", tiempo: "5 min", calorias: 280, descripcion: "Pan integral tostado con aguacate machacado, limón y chile en polvo.", ingredientes: ["Pan integral","Aguacate","Limón","Chile en polvo","Sal"], foto: "https://images.unsplash.com/photo-1603046891744-1f057a4e1b2d?w=400&q=80" },
-  { id: null, titulo: "Ensalada de atún", categoria: "Comida", tiempo: "10 min", calorias: 250, descripcion: "Atún en agua con lechuga, jitomate, pepino y aderezo de limón.", ingredientes: ["Atún en agua","Lechuga","Jitomate","Pepino","Limón"], foto: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80" },
-  { id: null, titulo: "Pechuga de pollo a la plancha", categoria: "Comida", tiempo: "20 min", calorias: 300, descripcion: "Pechuga marinada con ajo, limón y hierbas, cocinada a la plancha.", ingredientes: ["Pechuga de pollo","Ajo","Limón","Orégano","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&q=80" },
-  { id: null, titulo: "Arroz con verduras", categoria: "Comida", tiempo: "25 min", calorias: 350, descripcion: "Arroz integral salteado con zanahoria, chícharo, elote y salsa de soya.", ingredientes: ["Arroz integral","Zanahoria","Chícharo","Elote","Salsa de soya"], foto: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&q=80" },
-  { id: null, titulo: "Sopa de lentejas", categoria: "Comida", tiempo: "30 min", calorias: 290, descripcion: "Sopa espesa de lentejas con jitomate, cebolla y comino.", ingredientes: ["Lentejas","Jitomate","Cebolla","Ajo","Comino"], foto: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80" },
-  { id: null, titulo: "Quesadillas de frijol", categoria: "Comida", tiempo: "15 min", calorias: 380, descripcion: "Tortillas de maíz con frijoles refritos y queso gratinado.", ingredientes: ["Tortillas de maíz","Frijoles refritos","Queso","Sal"], foto: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?w=400&q=80" },
-  { id: null, titulo: "Pasta con jitomate y albahaca", categoria: "Cena", tiempo: "20 min", calorias: 400, descripcion: "Pasta con salsa de jitomate fresco, ajo y albahaca.", ingredientes: ["Pasta","Jitomate","Ajo","Albahaca","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=400&q=80" },
-  { id: null, titulo: "Crema de zanahoria", categoria: "Cena", tiempo: "25 min", calorias: 180, descripcion: "Crema suave de zanahoria con jengibre y caldo de verduras.", ingredientes: ["Zanahoria","Cebolla","Jengibre","Caldo de verduras","Aceite"], foto: "https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=400&q=80" },
-  { id: null, titulo: "Tacos de huevo con nopales", categoria: "Cena", tiempo: "15 min", calorias: 260, descripcion: "Huevo revuelto con nopales en cubos y tortillas de maíz.", ingredientes: ["Huevos","Nopales","Cebolla","Chile serrano","Tortillas"], foto: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80" },
-  { id: null, titulo: "Yogur con granola y fresas", categoria: "Snack", tiempo: "5 min", calorias: 200, descripcion: "Yogur griego con granola crujiente y fresas frescas.", ingredientes: ["Yogur griego","Granola","Fresas","Miel"], foto: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80" },
-  { id: null, titulo: "Manzana con mantequilla de cacahuate", categoria: "Snack", tiempo: "3 min", calorias: 190, descripcion: "Rodajas de manzana con mantequilla de cacahuate natural.", ingredientes: ["Manzana","Mantequilla de cacahuate"], foto: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=400&q=80" },
-  { id: null, titulo: "Licuado verde", categoria: "Snack", tiempo: "5 min", calorias: 150, descripcion: "Espinaca, pepino, piña y agua de coco licuados.", ingredientes: ["Espinaca","Pepino","Piña","Agua de coco","Limón"], foto: "https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&q=80" },
-  { id: null, titulo: "Bowl de frutas con chía", categoria: "Snack", tiempo: "5 min", calorias: 170, descripcion: "Frutas de temporada con semillas de chía y jugo de naranja.", ingredientes: ["Frutas de temporada","Semillas de chía","Jugo de naranja","Miel"], foto: "https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=400&q=80" },
-  { id: null, titulo: "Wrap de pollo con verduras", categoria: "Comida", tiempo: "15 min", calorias: 340, descripcion: "Tortilla integral rellena de pollo deshebrado, lechuga, zanahoria y yogur.", ingredientes: ["Tortilla integral","Pollo","Lechuga","Zanahoria","Yogur natural"], foto: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400&q=80" },
-  { id: null, titulo: "Ensalada griega ligera", categoria: "Comida", tiempo: "12 min", calorias: 260, descripcion: "Pepino, jitomate, queso fresco y aceitunas con aderezo ligero.", ingredientes: ["Pepino","Jitomate","Queso fresco","Aceitunas","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80" },
-  { id: null, titulo: "Sándwich de pavo", categoria: "Cena", tiempo: "8 min", calorias: 290, descripcion: "Pan integral con pavo, tomate, espinaca y mostaza.", ingredientes: ["Pan integral","Pavo","Tomate","Espinaca","Mostaza"], foto: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
-  { id: null, titulo: "Bowl de quinoa", categoria: "Comida", tiempo: "20 min", calorias: 360, descripcion: "Quinoa con aguacate, garbanzos, pepino y limón.", ingredientes: ["Quinoa","Garbanzos","Aguacate","Pepino","Limón"], foto: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80" },
-  { id: null, titulo: "Pan francés saludable", categoria: "Desayuno", tiempo: "10 min", calorias: 240, descripcion: "Pan integral remojado en huevo con canela y fruta fresca.", ingredientes: ["Pan integral","Huevo","Canela","Leche","Fruta"], foto: "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&q=80" },
-  { id: null, titulo: "Smoothie de frutos rojos", categoria: "Snack", tiempo: "5 min", calorias: 180, descripcion: "Licuado cremoso con frutos rojos, yogur y avena.", ingredientes: ["Frutos rojos","Yogur","Avena","Leche"], foto: "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?w=400&q=80" }
+  { id: "r01", titulo: "Avena con plátano y miel", categoria: "Desayuno", tiempo: "10 min", calorias: 320, descripcion: "Avena cremosa con rodajas de plátano, miel y canela. Fácil, nutritiva y lista en minutos.", ingredientes: ["Avena","Plátano","Miel","Leche","Canela"], foto: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400&q=80" },
+  { id: "r02", titulo: "Huevos revueltos con espinaca", categoria: "Desayuno", tiempo: "10 min", calorias: 210, descripcion: "Huevos revueltos suaves con espinacas salteadas y un toque de sal de ajo.", ingredientes: ["Huevos","Espinaca","Ajo","Aceite de oliva","Sal"], foto: "https://images.unsplash.com/photo-1510693206972-df098062cb71?w=400&q=80" },
+  { id: "r03", titulo: "Tostadas con aguacate", categoria: "Desayuno", tiempo: "5 min", calorias: 280, descripcion: "Pan integral tostado con aguacate machacado, limón y chile en polvo.", ingredientes: ["Pan integral","Aguacate","Limón","Chile en polvo","Sal"], foto: "https://images.unsplash.com/photo-1603046891744-1f057a4e1b2d?w=400&q=80" },
+  { id: "r04", titulo: "Ensalada de atún", categoria: "Comida", tiempo: "10 min", calorias: 250, descripcion: "Atún en agua con lechuga, jitomate, pepino y aderezo de limón.", ingredientes: ["Atún en agua","Lechuga","Jitomate","Pepino","Limón"], foto: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80" },
+  { id: "r05", titulo: "Pechuga de pollo a la plancha", categoria: "Comida", tiempo: "20 min", calorias: 300, descripcion: "Pechuga marinada con ajo, limón y hierbas, cocinada a la plancha.", ingredientes: ["Pechuga de pollo","Ajo","Limón","Orégano","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&q=80" },
+  { id: "r06", titulo: "Arroz con verduras", categoria: "Comida", tiempo: "25 min", calorias: 350, descripcion: "Arroz integral salteado con zanahoria, chícharo, elote y salsa de soya.", ingredientes: ["Arroz integral","Zanahoria","Chícharo","Elote","Salsa de soya"], foto: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&q=80" },
+  { id: "r07", titulo: "Sopa de lentejas", categoria: "Comida", tiempo: "30 min", calorias: 290, descripcion: "Sopa espesa de lentejas con jitomate, cebolla y comino.", ingredientes: ["Lentejas","Jitomate","Cebolla","Ajo","Comino"], foto: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80" },
+  { id: "r08", titulo: "Quesadillas de frijol", categoria: "Comida", tiempo: "15 min", calorias: 380, descripcion: "Tortillas de maíz con frijoles refritos y queso gratinado.", ingredientes: ["Tortillas de maíz","Frijoles refritos","Queso","Sal"], foto: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?w=400&q=80" },
+  { id: "r09", titulo: "Pasta con jitomate y albahaca", categoria: "Cena", tiempo: "20 min", calorias: 400, descripcion: "Pasta con salsa de jitomate fresco, ajo y albahaca.", ingredientes: ["Pasta","Jitomate","Ajo","Albahaca","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=400&q=80" },
+  { id: "r10", titulo: "Crema de zanahoria", categoria: "Cena", tiempo: "25 min", calorias: 180, descripcion: "Crema suave de zanahoria con jengibre y caldo de verduras.", ingredientes: ["Zanahoria","Cebolla","Jengibre","Caldo de verduras","Aceite"], foto: "https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?w=400&q=80" },
+  { id: "r11", titulo: "Tacos de huevo con nopales", categoria: "Cena", tiempo: "15 min", calorias: 260, descripcion: "Huevo revuelto con nopales en cubos y tortillas de maíz.", ingredientes: ["Huevos","Nopales","Cebolla","Chile serrano","Tortillas"], foto: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80" },
+  { id: "r12", titulo: "Yogur con granola y fresas", categoria: "Snack", tiempo: "5 min", calorias: 200, descripcion: "Yogur griego con granola crujiente y fresas frescas.", ingredientes: ["Yogur griego","Granola","Fresas","Miel"], foto: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80" },
+  { id: "r13", titulo: "Manzana con mantequilla de cacahuate", categoria: "Snack", tiempo: "3 min", calorias: 190, descripcion: "Rodajas de manzana con mantequilla de cacahuate natural.", ingredientes: ["Manzana","Mantequilla de cacahuate"], foto: "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=400&q=80" },
+  { id: "r14", titulo: "Licuado verde", categoria: "Snack", tiempo: "5 min", calorias: 150, descripcion: "Espinaca, pepino, piña y agua de coco licuados.", ingredientes: ["Espinaca","Pepino","Piña","Agua de coco","Limón"], foto: "https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&q=80" },
+  { id: "r15", titulo: "Bowl de frutas con chía", categoria: "Snack", tiempo: "5 min", calorias: 170, descripcion: "Frutas de temporada con semillas de chía y jugo de naranja.", ingredientes: ["Frutas de temporada","Semillas de chía","Jugo de naranja","Miel"], foto: "https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=400&q=80" },
+  { id: "r16", titulo: "Wrap de pollo con verduras", categoria: "Comida", tiempo: "15 min", calorias: 340, descripcion: "Tortilla integral rellena de pollo deshebrado, lechuga, zanahoria y yogur.", ingredientes: ["Tortilla integral","Pollo","Lechuga","Zanahoria","Yogur natural"], foto: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400&q=80" },
+  { id: "r17", titulo: "Ensalada griega ligera", categoria: "Comida", tiempo: "12 min", calorias: 260, descripcion: "Pepino, jitomate, queso fresco y aceitunas con aderezo ligero.", ingredientes: ["Pepino","Jitomate","Queso fresco","Aceitunas","Aceite de oliva"], foto: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80" },
+  { id: "r18", titulo: "Sándwich de pavo", categoria: "Cena", tiempo: "8 min", calorias: 290, descripcion: "Pan integral con pavo, tomate, espinaca y mostaza.", ingredientes: ["Pan integral","Pavo","Tomate","Espinaca","Mostaza"], foto: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
+  { id: "r19", titulo: "Bowl de quinoa", categoria: "Comida", tiempo: "20 min", calorias: 360, descripcion: "Quinoa con aguacate, garbanzos, pepino y limón.", ingredientes: ["Quinoa","Garbanzos","Aguacate","Pepino","Limón"], foto: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80" },
+  { id: "r20", titulo: "Pan francés saludable", categoria: "Desayuno", tiempo: "10 min", calorias: 240, descripcion: "Pan integral remojado en huevo con canela y fruta fresca.", ingredientes: ["Pan integral","Huevo","Canela","Leche","Fruta"], foto: "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&q=80" },
+  { id: "r21", titulo: "Smoothie de frutos rojos", categoria: "Snack", tiempo: "5 min", calorias: 180, descripcion: "Licuado cremoso con frutos rojos, yogur y avena.", ingredientes: ["Frutos rojos","Yogur","Avena","Leche"], foto: "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?w=400&q=80" }
 ];
-
 async function initRecetas() {
   const grid = document.getElementById('recetas-grid');
   if (!grid) return;
@@ -440,14 +460,7 @@ async function initRecetas() {
     }
   } catch { /* usa fallback local */ }
 
-  let likedIds = new Set();
-  if (user) {
-    try {
-      const res  = await fetch(`${API_URL}/perfil/${user.id}`);
-      const data = await res.json();
-      likedIds   = new Set((data.likes_recetas || []).map(r => r?.id));
-    } catch { /* sin likes previos */ }
-  }
+  const likedIds = new Set(getLikedRecetas());
 
   grid.innerHTML = lista.map((r, idx) => {
     const itemId  = r.id ?? `local-${idx}`;
@@ -800,22 +813,51 @@ async function loadPerfil(userId) {
         : '<p class="perfil-empty">Aún no has dado like a ningún post.</p>';
     }
 
+    // REEMPLAZA el bloque de likesRecetasEl en loadPerfil con esto:
+// ─────────────────────────────────────────────
     if (likesRecetasEl) {
-      likesRecetasEl.innerHTML = (data.likes_recetas || []).length
-        ? data.likes_recetas.map(r => `
-            <div class="perfil-item perfil-item--receta">
-              ${r?.imagen_url ? `<img src="${r.imagen_url}" alt="${r.titulo}" class="perfil-item__img" loading="lazy" onerror="this.style.display='none'">` : '<div class="perfil-item__img perfil-item__img--empty">🍽️</div>'}
+      const likedIds    = getLikedRecetas();
+      const likedRecetas = recetas.filter(r => likedIds.includes(r.id));
+
+      likesRecetasEl.innerHTML = likedRecetas.length
+        ? likedRecetas.map(r => `
+            <div class="perfil-item perfil-item--receta" data-receta-id="${r.id}" style="cursor:pointer">
+              <div class="perfil-item__img" style="background:var(--green-50);display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;width:56px;height:56px;flex-shrink:0">
+                ${r.foto
+                  ? `<img src="${r.foto}" alt="${r.titulo}" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.parentElement.innerHTML='🍽️'">`
+                  : '🍽️'}
+              </div>
               <div class="perfil-item__info">
-                ${r?.categoria ? `<span class="blog-card__tag">${r.categoria}</span>` : ''}
-                <p class="perfil-item__title">${r?.titulo || '—'}</p>
+                ${r.categoria ? `<span class="blog-card__tag">${r.categoria}</span>` : ''}
+                <p class="perfil-item__title">${r.titulo}</p>
               </div>
               <svg class="perfil-item__heart" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
             </div>`).join('')
         : '<p class="perfil-empty">Aún no has dado like a ninguna receta.</p>';
-    }
 
+      // Click en receta del perfil → ir a recetas y resaltar la card
+      likesRecetasEl.querySelectorAll('[data-receta-id]').forEach(el => {
+        el.addEventListener('click', () => {
+          const rid = el.dataset.recetaId;
+          document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
+          document.getElementById('page-recetas').removeAttribute('hidden');
+          document.querySelectorAll('[data-page]').forEach(l => l.classList.toggle('is-active', l.dataset.page === 'recetas'));
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+
+          // Resaltar la card
+          setTimeout(() => {
+            const card = document.querySelector(`.recipe-card[data-id="${rid}"]`);
+            if (card) {
+              card.style.outline = '2px solid var(--green-400)';
+              card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => card.style.outline = '', 2000);
+            }
+          }, 300);
+        });
+      });
+    }
     const editBioBtn = document.getElementById('perfil-edit-bio-btn');
     if (editBioBtn && user && user.id == userId) {
       editBioBtn.hidden = false;
