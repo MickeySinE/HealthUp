@@ -18,36 +18,34 @@
 
       <ul class="navbar__links">
         <li><a href="#" data-page="inicio" class="is-active">Inicio</a></li>
-        <li><a href="#" data-page="nutricion">Nutrición</a></li>
         <li><a href="#" data-page="recetas">Recetas</a></li>
         <li><a href="#" data-page="blog">Blog</a></li>
       </ul>
 
-      <!-- BUSCADOR -->
       <div class="navbar__search">
-        <input id="buscador" type="text" placeholder="Buscar alimentos..." autocomplete="off" />
+        <input type="text" id="buscador" placeholder="Buscar alimento..." autocomplete="off" />
         <span class="navbar__search__icon">🔍</span>
-        <ul id="sugerencias"></ul>
       </div>
 
-      <!-- ACCIONES -->
       <div class="navbar__actions">
         <div class="auth-dropdown">
           <button class="btn btn--primary auth-dropdown__trigger" aria-haspopup="true" aria-expanded="false">
             Iniciar sesión
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
           <div class="auth-dropdown__menu" role="menu">
             <div class="auth-dropdown__header"><p>¿Ya tienes cuenta?</p></div>
             <a href="#" class="auth-dropdown__item auth-dropdown__item--primary" role="menuitem" data-auth="login">
-              <span class="auth-dropdown__item-icon">→</span> Iniciar sesión
+              <span class="auth-dropdown__item-icon">→</span>
+              Iniciar sesión
             </a>
             <div class="auth-dropdown__divider"></div>
             <div class="auth-dropdown__header"><p>¿Nuevo por aquí?</p></div>
             <a href="#" class="auth-dropdown__item" role="menuitem" data-auth="register">
-              <span class="auth-dropdown__item-icon">✦</span> Crear cuenta gratis
+              <span class="auth-dropdown__item-icon">✦</span>
+              Crear cuenta gratis
             </a>
           </div>
         </div>
@@ -117,53 +115,16 @@
           Rompe los mitos, entiende tu cuerpo y toma decisiones que importan.
         </p>
         <div class="hero__cta">
-          <a href="#" class="btn btn--primary btn--lg" data-page="nutricion">Explorar nutrición</a>
+          <a href="#" class="btn btn--primary btn--lg" data-page="blog">Explorar blog</a>
           <a href="#" class="btn btn--ghost btn--lg" data-page="recetas">Ver recetas</a>
         </div>
       </div>
       <div class="hero__pills" aria-hidden="true">
-        <span class="pill">🥦 Sin procesar</span>
-        <span class="pill">💧 Hidratación</span>
-        <span class="pill">🌿 Basado en plantas</span>
-        <span class="pill">🧠 Salud mental</span>
-        <span class="pill">🏃 Movimiento</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══ PÁGINA: NUTRICIÓN ══ -->
-  <section class="page" id="page-nutricion" hidden>
-    <div class="page-hero">
-      <p class="hero__eyebrow">Educación · Ciencia · Bienestar</p>
-      <h1 class="page-hero__title">Nutrición</h1>
-      <p class="page-hero__sub">Aprende a leer lo que comes. Sin dietas milagro, sin mitos — solo información real.</p>
-    </div>
-    <div class="page-content">
-      <div class="coming-soon-grid">
-        <div class="coming-soon-card">
-          <span class="coming-soon-card__icon">🥗</span>
-          <h3>Macronutrientes</h3>
-          <p>Proteínas, carbohidratos y grasas — qué son y para qué sirven.</p>
-          <span class="badge">Próximamente</span>
-        </div>
-        <div class="coming-soon-card">
-          <span class="coming-soon-card__icon">💊</span>
-          <h3>Vitaminas y minerales</h3>
-          <p>Micronutrientes esenciales que tu cuerpo necesita cada día.</p>
-          <span class="badge">Próximamente</span>
-        </div>
-        <div class="coming-soon-card">
-          <span class="coming-soon-card__icon">🚫</span>
-          <h3>Mitos y realidades</h3>
-          <p>Desmontamos las creencias más comunes sobre la alimentación.</p>
-          <span class="badge">Próximamente</span>
-        </div>
-        <div class="coming-soon-card">
-          <span class="coming-soon-card__icon">🔍</span>
-          <h3>Buscador de alimentos</h3>
-          <p>Consulta la información nutricional de cualquier alimento.</p>
-          <span class="badge">Próximamente</span>
-        </div>
+        <span class="pill">Sin procesar</span>
+        <span class="pill">Hidratación</span>
+        <span class="pill">Basado en plantas</span>
+        <span class="pill">Salud mental</span>
+        <span class="pill">Movimiento</span>
       </div>
     </div>
   </section>
@@ -176,33 +137,8 @@
       <p class="page-hero__sub">Ideas de comidas que nutren tu cuerpo sin sacrificar el sabor.</p>
     </div>
     <div class="page-content">
-      <h2 class="section-title">Recetas saludables destacadas</h2>
-      <div class="cards-grid">
-        <div class="recipe-card">
-          <div class="recipe-card__img">🥑</div>
-          <div class="recipe-card__body">
-            <h3>Bowl de aguacate</h3>
-            <p>Rico en grasas saludables y fibra. Perfecto para empezar el día.</p>
-            <span class="badge">Próximamente</span>
-          </div>
-        </div>
-        <div class="recipe-card">
-          <div class="recipe-card__img">🍗</div>
-          <div class="recipe-card__body">
-            <h3>Pollo al limón</h3>
-            <p>Alto en proteína, bajo en grasa. Ideal para después del ejercicio.</p>
-            <span class="badge">Próximamente</span>
-          </div>
-        </div>
-        <div class="recipe-card">
-          <div class="recipe-card__img">🥦</div>
-          <div class="recipe-card__body">
-            <h3>Ensalada verde</h3>
-            <p>Vitaminas, minerales y antioxidantes en un solo plato.</p>
-            <span class="badge">Próximamente</span>
-          </div>
-        </div>
-      </div>
+      <h2 class="section-title">Recetas saludables</h2>
+      <div class="cards-grid" id="recetas-grid"></div>
     </div>
   </section>
 
@@ -244,21 +180,17 @@
     </div>
   </section>
 
-  <!-- ══ PÁGINA: BUSCADOR ══ -->
+  <!-- ══ PÁGINA: BÚSQUEDA ══ -->
   <section class="page" id="page-search" hidden>
     <div class="page-hero">
       <p class="hero__eyebrow">Buscador · Nutrición · Datos reales</p>
-      <h1 class="page-hero__title" id="search-title">Resultados</h1>
-      <p class="page-hero__sub" id="search-sub">Información nutricional por cada 100g de porción.</p>
+      <h1 class="page-hero__title" id="search-title"></h1>
+      <p class="page-hero__sub" id="search-sub"></p>
     </div>
     <div class="page-content">
-      <div id="search-state-loading" hidden>
-        <p style="color: var(--stone-600); text-align:center; padding: 3rem 0;">Buscando…</p>
-      </div>
-      <div id="search-state-empty" hidden>
-        <p style="color: var(--stone-600); text-align:center; padding: 3rem 0;">No encontramos resultados para esa búsqueda.</p>
-      </div>
-      <div id="searchResults" class="cards-grid"></div>
+      <p id="search-state-loading" hidden style="opacity:0.5;text-align:center">Buscando...</p>
+      <p id="search-state-empty" hidden style="opacity:0.5;text-align:center">No se encontraron resultados.</p>
+      <div class="cards-grid" id="searchResults"></div>
     </div>
   </section>
 
