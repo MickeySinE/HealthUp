@@ -820,7 +820,7 @@ async function loadPerfil(userId) {
     if (likesPostsEl) {
       likesPostsEl.innerHTML = (data.likes_posts || []).length
         ? data.likes_posts.map(p => `
-            <div class="perfil-item">
+            <div class="perfil-item perfil-post-like" data-post-id="${p.id}" style="cursor:pointer">
               <div class="perfil-item__info">
                 ${p?.categoria ? `<span class="blog-card__tag">${p.categoria}</span>` : ''}
                 <p class="perfil-item__title">${p?.titulo || '—'}</p>
@@ -828,10 +828,40 @@ async function loadPerfil(userId) {
               <svg class="perfil-item__heart" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
-            </div>`).join('')
+            </div>
+          `).join('')
         : '<p class="perfil-empty">Aún no has dado like a ningún post.</p>';
     }
+    if (likesPostsEl) {
+      likesPostsEl.querySelectorAll('[data-post-id]').forEach(el => {
+        el.addEventListener('click', async () => {
+          const postId = el.dataset.postId;
 
+          document.querySelectorAll('.page').forEach(p => p.setAttribute('hidden', ''));
+          document.getElementById('page-blog')?.removeAttribute('hidden');
+
+          document.querySelectorAll('[data-page]').forEach(l => {
+            l.classList.toggle('is-active', l.dataset.page === 'blog');
+          });
+
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+
+          await initForo();
+          await initNuevoPost();
+
+          setTimeout(() => {
+            const card = document.querySelector(`.foro-card[data-id="${postId}"]`);
+            if (card) {
+              card.style.outline = '2px solid var(--green-400)';
+              card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => {
+                card.style.outline = '';
+              }, 2000);
+            }
+          }, 300);
+        });
+      });
+    }
     // REEMPLAZA el bloque de likesRecetasEl en loadPerfil con esto:
 // ─────────────────────────────────────────────
     if (likesRecetasEl) {
