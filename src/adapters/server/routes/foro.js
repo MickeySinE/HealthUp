@@ -64,7 +64,7 @@ router.post('/posts', async (req, res) => {
 router.get('/posts/:id/comentarios', async (req, res) => {
   const { data, error } = await supabase
     .from('comentarios')
-    .select('*, users(username, foto_url)')
+    .select('*, users(username, foto_url), replies:comentarios(id, contenido, users(username))')
     .eq('post_id', req.params.id)
     .order('created_at', { ascending: true });
   if (error) return res.status(500).json({ error: error.message });

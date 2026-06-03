@@ -1,7 +1,3 @@
-/* =============================================
-   HealthUP — main.css
-   ============================================= */
-
 /* ── RESET & BASE ── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -131,44 +127,6 @@ ul { list-style: none; }
   background: var(--stone-900);
   border-radius: 2px;
   transition: transform var(--transition), opacity var(--transition);
-}
-
-/* ── NAVBAR SEARCH ── */
-.navbar__search {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  max-width: 340px;
-  margin: 0 auto;
-}
-
-.navbar__search input {
-  width: 100%;
-  padding: 0.45rem 2.5rem 0.45rem 1rem;
-  border-radius: var(--radius-full);
-  border: 1.5px solid var(--stone-100);
-  background: #fff;
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  color: var(--stone-900);
-  outline: none;
-  transition: border-color var(--transition), box-shadow var(--transition);
-}
-.navbar__search input:focus {
-  border-color: var(--green-400);
-  box-shadow: 0 0 0 3px rgba(58, 172, 96, 0.12);
-}
-.navbar__search input::placeholder { color: var(--stone-300); }
-
-.navbar__search__icon {
-  position: absolute;
-  right: 0.85rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--stone-300);
-  pointer-events: none;
-  font-size: 0.85rem;
 }
 
 /* ── HERO ── */
@@ -606,18 +564,6 @@ ul { list-style: none; }
 }
 .recipe-card__img .like-btn:hover { background: #fff; }
 
-/* ═══════════════════════════════════════════════
-   FORO — cards de posts
-   ═══════════════════════════════════════════════ */
-.foro-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
 .foro-card {
   background: #fff;
   border-radius: var(--radius-md);
@@ -979,4 +925,526 @@ ul { list-style: none; }
 .perfil-link:hover {
   opacity: 0.75;
   text-decoration: underline;
+}
+
+/* ── RECETAS LAYOUT ── */
+.recetas-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr 260px;
+  gap: 1.5rem;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 5rem;
+  align-items: start;
+}
+
+.recetas-sidebar {
+  position: sticky;
+  top: calc(var(--nav-h) + 1rem);
+  background: #fff;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sidebar-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--stone-900);
+  margin-bottom: 0.25rem;
+}
+
+/* ── FILTER GROUP ── */
+.filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.filter-group__label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--stone-300);
+}
+
+.filter-options { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.filter-chip {
+  background: none;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--stone-600);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.filter-chip:hover {
+  background: var(--stone-50);
+  color: var(--stone-900);
+}
+
+.filter-chip.is-active {
+  background: var(--green-50);
+  color: var(--green-600);
+  border-color: var(--green-100);
+  font-weight: 500;
+}
+
+/* ── RECETAS MAIN ── */
+.recetas-main { display: flex; flex-direction: column; gap: 1rem; }
+
+.recetas-search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.recetas-search-bar input {
+  width: 100%;
+  padding: 0.6rem 2.5rem 0.6rem 1rem;
+  border: 1.5px solid var(--stone-100);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--stone-900);
+  background: #fff;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.recetas-search-bar input:focus {
+  border-color: var(--green-400);
+  box-shadow: 0 0 0 3px rgba(58, 172, 96, 0.12);
+}
+
+.recetas-search-bar span {
+  position: absolute;
+  right: 1rem;
+  pointer-events: none;
+  font-size: 0.9rem;
+}
+
+.recetas-count {
+  font-size: 0.8rem;
+  color: var(--stone-300);
+  margin: 0;
+}
+
+/* ── CHATBOT ── */
+.recetas-sidebar--chat {
+  max-height: calc(100vh - var(--nav-h) - 3rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 320px;
+  padding-right: 0.25rem;
+}
+
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--stone-100); border-radius: 4px; }
+
+.chat-msg {
+  max-width: 90%;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.chat-msg--bot {
+  background: var(--green-50);
+  color: var(--stone-900);
+  border: 1px solid var(--green-100);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.chat-msg--user {
+  background: var(--green-400);
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chat-suggestion {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--stone-100);
+  background: var(--stone-50);
+  color: var(--stone-600);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.chat-suggestion:hover {
+  background: var(--green-50);
+  border-color: var(--green-100);
+  color: var(--green-600);
+}
+
+.chat-input-wrap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.chat-input-wrap input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.chat-input-wrap input:focus {
+  border-color: var(--green-400);
+}
+
+/* ── RESPONSIVE RECETAS ── */
+@media (max-width: 1024px) {
+  .recetas-layout {
+    grid-template-columns: 1fr;
+  }
+  .recetas-sidebar {
+    position: static;
+  }
+  .recetas-sidebar--filtros .filter-options {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* ── FORO LAYOUT ── */
+.foro-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 260px;
+  gap: 1.5rem;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 5rem;
+  align-items: start;
+}
+
+.foro-sidebar {
+  position: sticky;
+  top: calc(var(--nav-h) + 1rem);
+  background: #fff;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.foro-sidebar--der {
+  max-height: calc(100vh - var(--nav-h) - 3rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.foro-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* ── NUEVO POST FORM ── */
+.nuevo-post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--stone-100);
+  margin-top: 0.25rem;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--stone-900);
+  background: var(--stone-50);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  resize: vertical;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: var(--green-400);
+  box-shadow: 0 0 0 3px rgba(58, 172, 96, 0.12);
+  background: #fff;
+}
+
+/* ── FORO CARDS ── */
+.foro-card {
+  background: #fff;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color var(--transition);
+}
+
+.foro-card:hover {
+  border-color: var(--stone-300);
+}
+
+.foro-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.foro-card__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--green-100);
+  color: var(--green-600);
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.foro-card__autor {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--stone-900);
+}
+
+.foro-card__fecha {
+  font-size: 0.78rem;
+  color: var(--stone-300);
+}
+
+.foro-card__tag { margin-left: auto; }
+
+.foro-card__titulo {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--stone-900);
+  line-height: 1.4;
+}
+
+.foro-card__contenido {
+  font-size: 0.875rem;
+  color: var(--stone-600);
+  line-height: 1.6;
+}
+
+.foro-card__imagen {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.foro-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ── LIKE BTN ── */
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--stone-600);
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.like-btn svg { width: 14px; height: 14px; }
+
+.like-btn:hover {
+  background: var(--green-50);
+  border-color: var(--green-100);
+  color: var(--green-600);
+}
+
+.like-btn.is-liked {
+  background: var(--green-50);
+  border-color: var(--green-100);
+  color: var(--green-600);
+}
+
+/* ── COMENTARIOS ── */
+.foro-comentarios {
+  border-top: 1px solid var(--stone-100);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.comentario {
+  background: var(--stone-50);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+.comentario strong {
+  color: var(--stone-900);
+  font-weight: 500;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.comentario p { color: var(--stone-600); line-height: 1.5; }
+
+/* Respuestas a comentarios */
+.comentario__replies {
+  margin-top: 0.5rem;
+  margin-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.comentario__reply {
+  background: #fff;
+  border-left: 2px solid var(--green-100);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.82rem;
+}
+
+.comentario__reply strong {
+  color: var(--stone-900);
+  font-weight: 500;
+  display: block;
+  margin-bottom: 1px;
+}
+
+.comentario__reply p { color: var(--stone-600); }
+
+.btn-responder {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--stone-300);
+  cursor: pointer;
+  padding: 2px 0;
+  margin-top: 4px;
+}
+
+.btn-responder:hover { color: var(--green-600); }
+
+.reply-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  margin-left: 1rem;
+}
+
+.reply-form input {
+  flex: 1;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.reply-form input:focus { border-color: var(--green-400); }
+
+.foro-comentarios__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.foro-comentarios__form textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--stone-100);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.foro-comentarios__form textarea:focus { border-color: var(--green-400); }
+
+.sin-comentarios, .foro-login-hint {
+  font-size: 0.82rem;
+  color: var(--stone-300);
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.foro-login-hint a { color: var(--green-600); }
+
+.foro-loading, .foro-empty {
+  text-align: center;
+  opacity: 0.5;
+  padding: 3rem 0;
+  font-size: 0.9rem;
+}
+
+/* ── RESPONSIVE FORO ── */
+@media (max-width: 1024px) {
+  .foro-layout {
+    grid-template-columns: 1fr;
+  }
+  .foro-sidebar {
+    position: static;
+  }
+  .foro-sidebar--izq .filter-options {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }

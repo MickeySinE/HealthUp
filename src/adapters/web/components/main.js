@@ -1,7 +1,3 @@
-/* =============================================
-   HealthUP — main.js
-   ============================================= */
-
 const API_URL = 'http://localhost:3000/api';
 
 // ── SESSION ────────────────────────────────────
@@ -298,51 +294,6 @@ function initNavbarScroll() {
   }, { passive: true });
 }
 
-// ── BUSCADOR ──────────────────────────────────
-function initBuscador() {
-  const input = document.getElementById('buscador');
-  if (!input) return;
-
-  function irARecetasYFiltrar(query) {
-    const recetasPage = document.getElementById('page-recetas');
-    const allPages = document.querySelectorAll('.page');
-    const navLinks = document.querySelectorAll('[data-page]');
-
-    allPages.forEach(p => p.setAttribute('hidden', ''));
-    recetasPage?.removeAttribute('hidden');
-
-    navLinks.forEach(l => {
-      l.classList.toggle('is-active', l.dataset.page === 'recetas');
-    });
-
-    const cards = document.querySelectorAll('#recetas-grid .recipe-card');
-
-    cards.forEach(card => {
-      const texto = card.textContent.toLowerCase();
-      const visible = texto.includes(query.toLowerCase());
-      card.style.display = visible ? '' : 'none';
-    });
-  }
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const q = input.value.trim();
-      if (q.length >= 1) irARecetasYFiltrar(q);
-    }
-  });
-
-  input.addEventListener('input', () => {
-    const q = input.value.trim();
-    if (!q) {
-      document.querySelectorAll('#recetas-grid .recipe-card').forEach(card => {
-        card.style.display = '';
-      });
-      return;
-    }
-    irARecetasYFiltrar(q);
-  });
-}
-
 // ── LIKES — TOGGLE (foro y recetas) ───────────
 // ── LIKES ──────────────────────────────────────
 // Likes de recetas se guardan en localStorage (recetas hardcodeadas)
@@ -597,12 +548,23 @@ async function initForo() {
             const res = await fetch(`${API_URL}/foro/posts/${id}/comentarios`);
             const data = await res.json();
             lista.innerHTML = data.length
-              ? data.map(c => `
-                <div class="comentario">
-                  <strong>${c.users?.username || 'Anónimo'}</strong>
-                  <p>${c.contenido}</p>
-                </div>`).join('')
-              : '<p class="sin-comentarios">Sé el primero en comentar.</p>';
+            ? data.map(c => `
+              <div class="comentario" data-id="${c.id}">
+                <strong>${c.users?.username || 'Anónimo'}</strong>
+                <p>${c.contenido}</p>
+                <button class="btn-responder">↩ Responder</button>
+                <div class="comentario__replies">
+                  ${(c.replies || []).map(r => `
+                    <div class="comentario__reply">
+                      <strong>${r.users?.username || 'Anónimo'}</strong>
+                      <p>${r.contenido}</p>
+                    </div>`).join('')}
+                </div>
+              </div>`).join('')
+            : '<p class="sin-comentarios">Sé el primero en comentar.</p>';
+
+            // Iniciar respuestas a comentarios
+          await initRespuestasComentarios(id, lista);
           } catch {
             lista.innerHTML = '<p class="sin-comentarios">Error al cargar comentarios.</p>';
           }
@@ -1014,6 +976,415 @@ document.addEventListener('click', (e) => {
   if (panel) { panel.hidden = false; panel.classList.add('is-active'); }
 });
 
+// ── FILTROS DE RECETAS ─────────────────────────
+function initFiltrosRecetas() {
+  let filtroCategoria = 'todas';
+  let filtroMaxCalorias = 0;
+  let filtroMaxTiempo = 0;
+  let busqueda = '';
+
+  function aplicarFiltros() {
+    const grid  = document.getElementById('recetas-grid');
+    const empty = document.getElementById('recetas-empty');
+    const count = document.getElementById('recetas-count');
+    if (!grid) return;
+
+    const cards = grid.querySelectorAll('.recipe-card');
+    let visibles = 0;
+
+    cards.forEach(card => {
+      const titulo      = card.querySelector('h3')?.textContent.toLowerCase() || '';
+      const categoria   = card.querySelector('.blog-card__tag')?.textContent.trim() || '';
+      const kcalText    = card.querySelector('.recipe-card__kcal')?.textContent || '';
+      const kcal        = parseInt(kcalText.replace(/\D/g, '')) || 0;
+      const tiempoText  = card.querySelector('.recipe-card__time')?.textContent || '';
+      const tiempo      = parseInt(tiempoText.replace(/\D/g, '')) || 0;
+      const ingredientes = card.querySelector('.recipe-card__ingredients')?.textContent.toLowerCase() || '';
+
+      const pasaCategoria  = filtroCategoria === 'todas' || categoria === filtroCategoria;
+      const pasaCalorias   = filtroMaxCalorias === 0 || kcal <= filtroMaxCalorias;
+      const pasaTiempo     = filtroMaxTiempo === 0 || tiempo <= filtroMaxTiempo;
+      const pasaBusqueda   = !busqueda || titulo.includes(busqueda) || ingredientes.includes(busqueda);
+
+      const visible = pasaCategoria && pasaCalorias && pasaTiempo && pasaBusqueda;
+      card.style.display = visible ? '' : 'none';
+      if (visible) visibles++;
+    });
+
+    if (empty) empty.hidden = visibles > 0;
+    if (count) count.textContent = visibles > 0 ? `${visibles} receta${visibles !== 1 ? 's' : ''}` : '';
+  }
+
+  // Filtro categoría
+  document.getElementById('filter-categoria')?.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#filter-categoria .filter-chip').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      filtroCategoria = btn.dataset.filter;
+      aplicarFiltros();
+    });
+  });
+
+  // Filtro calorías
+  document.getElementById('filter-calorias')?.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#filter-calorias .filter-chip').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      filtroMaxCalorias = parseInt(btn.dataset.calorias) || 0;
+      aplicarFiltros();
+    });
+  });
+
+  // Filtro tiempo
+  document.getElementById('filter-tiempo')?.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#filter-tiempo .filter-chip').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      filtroMaxTiempo = parseInt(btn.dataset.tiempo) || 0;
+      aplicarFiltros();
+    });
+  });
+
+  // Búsqueda
+  document.getElementById('recetas-search')?.addEventListener('input', (e) => {
+    busqueda = e.target.value.trim().toLowerCase();
+    aplicarFiltros();
+  });
+
+  // Reset
+  document.getElementById('filtros-reset')?.addEventListener('click', () => {
+    filtroCategoria = 'todas';
+    filtroMaxCalorias = 0;
+    filtroMaxTiempo = 0;
+    busqueda = '';
+
+    document.getElementById('recetas-search').value = '';
+    document.querySelectorAll('#filter-categoria .filter-chip, #filter-calorias .filter-chip, #filter-tiempo .filter-chip')
+      .forEach(b => b.classList.remove('is-active'));
+    document.querySelector('#filter-categoria .filter-chip[data-filter="todas"]')?.classList.add('is-active');
+    document.querySelector('#filter-calorias .filter-chip[data-calorias="0"]')?.classList.add('is-active');
+    document.querySelector('#filter-tiempo .filter-chip[data-tiempo="0"]')?.classList.add('is-active');
+
+    aplicarFiltros();
+  });
+}
+
+// ── CHATBOT DE NUTRICIÓN ───────────────────────
+const chatRespuestas = [
+  {
+    palabras: ['macro', 'macros', 'macronutriente'],
+    respuesta: 'Los macronutrientes son proteínas, carbohidratos y grasas. Son los tres nutrientes que el cuerpo necesita en grandes cantidades para funcionar. Las proteínas construyen músculo, los carbohidratos dan energía rápida y las grasas regulan hormonas y absorben vitaminas.'
+  },
+  {
+    palabras: ['proteina', 'proteína', 'proteinas'],
+    respuesta: 'La proteína es esencial para construir y reparar músculo. Se recomienda entre 1.2 y 2g por kg de peso corporal al día, dependiendo de tu actividad física. Fuentes: pollo, huevo, atún, legumbres, yogur griego.'
+  },
+  {
+    palabras: ['carbohidrato', 'carbo', 'carbos', 'carbohidratos'],
+    respuesta: 'Los carbohidratos son tu principal fuente de energía. Prefiere los complejos como avena, arroz integral, camote y legumbres, que liberan energía lentamente y te mantienen saciado más tiempo.'
+  },
+  {
+    palabras: ['grasa', 'grasas', 'lipido', 'lípido'],
+    respuesta: 'No todas las grasas son malas. Las grasas saludables (aguacate, aceite de oliva, nueces) son esenciales para el cerebro, hormonas y absorción de vitaminas. Evita las grasas trans y el exceso de grasas saturadas.'
+  },
+  {
+    palabras: ['caloria', 'calorias', 'kcal', 'cuantas calorias'],
+    respuesta: 'Las necesidades calóricas dependen de tu peso, altura, edad y actividad. En promedio, una mujer necesita 1800-2200 kcal/día y un hombre 2200-2800 kcal/día. Para perder peso, crea un déficit moderado de 300-500 kcal.'
+  },
+  {
+    palabras: ['fibra', 'fibras'],
+    respuesta: 'La fibra regula la digestión, controla el azúcar en sangre y te mantiene saciado. Fuentes ricas: avena, lentejas, frijoles, brócoli, manzana, semillas de chía. Se recomienda 25-35g al día.'
+  },
+  {
+    palabras: ['vitamina', 'vitaminas', 'minerales', 'micronutriente'],
+    respuesta: 'Las vitaminas y minerales son micronutrientes esenciales. La vitamina C refuerza el sistema inmune (cítricos, pimientos), el hierro transporta oxígeno (carne roja, espinacas) y el calcio fortalece huesos (lácteos, brócoli).'
+  },
+  {
+    palabras: ['agua', 'hidratacion', 'hidratación', 'tomar agua'],
+    respuesta: 'La hidratación es clave. Se recomienda tomar entre 2 y 3 litros de agua al día, más si haces ejercicio. El agua regula la temperatura corporal, transporta nutrientes y mejora la concentración.'
+  },
+  {
+    palabras: ['desayuno', 'breakfast'],
+    respuesta: 'Un buen desayuno debe incluir proteína (huevo, yogur), carbohidratos complejos (avena, pan integral) y grasas saludables (aguacate, nueces). Esto estabiliza tu energía durante la mañana.'
+  },
+  {
+    palabras: ['azucar', 'azúcar', 'dulce', 'glucosa'],
+    respuesta: 'El exceso de azúcar está relacionado con obesidad, diabetes tipo 2 y problemas cardíacos. La OMS recomienda no más de 25g de azúcar libre al día. Ojo con el azúcar oculta en jugos, salsas y alimentos procesados.'
+  },
+  {
+    palabras: ['dieta', 'bajar de peso', 'adelgazar', 'perder peso'],
+    respuesta: 'Para bajar de peso de forma saludable: crea un déficit calórico moderado, prioriza proteínas y fibra, reduce ultraprocesados y azúcar, y mantente activo. Evita dietas extremas — la consistencia es más importante que la velocidad.'
+  },
+  {
+    palabras: ['musculo', 'músculo', 'ganar musculo', 'masa muscular'],
+    respuesta: 'Para ganar músculo necesitas: suficiente proteína (1.6-2g/kg), entrenamiento de fuerza progresivo, buen descanso y un ligero superávit calórico. La paciencia es clave — el músculo real se construye en meses.'
+  },
+  {
+    palabras: ['hola', 'buenos dias', 'buenas', 'hey'],
+    respuesta: '¡Hola! 👋 Estoy aquí para ayudarte con dudas sobre nutrición, alimentos, calorías o hábitos saludables. ¿Qué quieres saber?'
+  }
+];
+
+function responderChatbot(mensaje) {
+  const texto = mensaje.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const item of chatRespuestas) {
+    if (item.palabras.some(p => texto.includes(p.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))) {
+      return item.respuesta;
+    }
+  }
+  return 'No tengo información específica sobre eso, pero te recomiendo consultar con un nutriólogo. Puedo ayudarte con preguntas sobre macros, calorías, proteínas, fibra, hidratación y hábitos alimenticios.';
+}
+
+function initChatbot() {
+  const messages   = document.getElementById('chat-messages');
+  const input      = document.getElementById('chat-input');
+  const sendBtn    = document.getElementById('chat-send');
+  const suggestions = document.querySelectorAll('.chat-suggestion');
+
+  if (!messages || !input || !sendBtn) return;
+
+  function agregarMensaje(texto, tipo) {
+    const div = document.createElement('div');
+    div.className = `chat-msg chat-msg--${tipo}`;
+    div.innerHTML = `<p>${texto}</p>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function enviar(texto) {
+    if (!texto.trim()) return;
+    agregarMensaje(texto, 'user');
+    input.value = '';
+
+    // Simular typing delay
+    setTimeout(() => {
+      agregarMensaje(responderChatbot(texto), 'bot');
+    }, 400);
+  }
+
+  sendBtn.addEventListener('click', () => enviar(input.value));
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') enviar(input.value); });
+
+  suggestions.forEach(btn => {
+    btn.addEventListener('click', () => {
+      enviar(btn.textContent);
+      btn.style.display = 'none'; // ocultar sugerencia usada
+    });
+  });
+}
+
+// ── TOGGLE NUEVO POST ──────────────────────────
+function initToggleNuevoPost() {
+  const btn = document.getElementById('toggle-nuevo-post-btn');
+  const overlay = document.getElementById('nuevoPostModal');
+  const closeBtn = document.getElementById('nuevoPostClose');
+  if (!btn || !overlay) return;
+
+  btn.addEventListener('click', () => {
+    const user = getSession();
+    if (!user) { openModal('login'); return; }
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', false);
+    document.body.style.overflow = 'hidden';
+  });
+
+  function cerrarModal() {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', true);
+    document.body.style.overflow = '';
+    document.getElementById('post-error').textContent = '';
+  }
+
+  closeBtn?.addEventListener('click', cerrarModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrarModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarModal(); });
+}
+
+// ── FILTROS DEL FORO ───────────────────────────
+function initFiltrosForo() {
+  document.getElementById('foro-filter-categoria')
+    ?.querySelectorAll('.filter-chip')
+    .forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#foro-filter-categoria .filter-chip')
+          .forEach(b => b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+
+        const filtro = btn.dataset.foroFilter;
+        document.querySelectorAll('#foro-grid .foro-card').forEach(card => {
+          if (filtro === 'todas') {
+            card.style.display = '';  // ← era 'none', debe ser ''
+          } else {
+            const cat = card.querySelector('.blog-card__tag')?.textContent.trim() || '';
+            card.style.display = cat === filtro ? '' : 'none';
+          }
+        });
+      });
+    });
+}
+
+// ── CHATBOT DEL FORO ───────────────────────────
+const foroChatRespuestas = [
+  {
+    palabras: ['publicar', 'post', 'publicacion', 'publicación', 'como publico', 'nueva publicacion'],
+    respuesta: 'Para publicar, haz clic en el botón "✏️ Nueva publicación" en la parte superior izquierda. Escribe un título, elige una categoría, agrega tu contenido y opcionalmente una imagen. Luego dale clic a "Publicar".'
+  },
+  {
+    palabras: ['comentar', 'comentario', 'como comento', 'responder post'],
+    respuesta: 'Para comentar en un post, ábrelo y busca el botón "💬 Comentarios". Escribe tu comentario en el campo de texto y dale clic a "Enviar". Necesitas tener sesión iniciada para comentar.'
+  },
+  {
+    palabras: ['foto', 'imagen', 'subir foto', 'imagen en post'],
+    respuesta: 'Sí, puedes subir una imagen al crear tu post. Verás el campo "Imagen (opcional)" en el formulario de publicación. Solo selecciona tu archivo y se subirá automáticamente.'
+  },
+  {
+    palabras: ['like', 'likes', 'me gusta', 'corazon', 'corazón'],
+    respuesta: 'Para dar like a un post, haz clic en el botón con el corazón ❤️ que aparece al pie de cada publicación. Necesitas tener sesión iniciada. Puedes quitar el like haciendo clic nuevamente.'
+  },
+  {
+    palabras: ['borrar', 'eliminar', 'borrar post', 'eliminar post', 'mi post'],
+    respuesta: 'Solo puedes eliminar tus propios posts. En tus publicaciones verás un botón 🗑 "Eliminar". Te pedirá confirmación antes de borrar permanentemente.'
+  },
+  {
+    palabras: ['categoria', 'categoría', 'categorias', 'categorías', 'tipos de post'],
+    respuesta: 'Las categorías disponibles son: Nutrición, Ejercicio, Bienestar, Recetas y Pregunta. Puedes filtrar los posts por categoría usando los botones del panel izquierdo.'
+  },
+  {
+    palabras: ['responder comentario', 'hilo', 'hilos', 'responder a comentario'],
+    respuesta: 'Puedes responder a comentarios específicos haciendo clic en "Responder" debajo de cada comentario. Tu respuesta aparecerá anidada debajo del comentario original.'
+  },
+  {
+    palabras: ['perfil', 'mi perfil', 'ver perfil'],
+    respuesta: 'Puedes ver tu perfil haciendo clic en tu nombre de usuario en la barra de navegación y seleccionando "Mi perfil". Ahí verás tus posts, likes y podrás editar tu bio y foto.'
+  },
+  {
+    palabras: ['sesion', 'sesión', 'iniciar sesion', 'login', 'registrar', 'cuenta'],
+    respuesta: 'Para publicar, comentar o dar likes necesitas tener una cuenta. Haz clic en "Iniciar sesión" en la barra superior. Si no tienes cuenta, selecciona "Crear cuenta gratis".'
+  },
+  {
+    palabras: ['hola', 'buenos dias', 'buenas', 'hey', 'ayuda'],
+    respuesta: '¡Hola! 👋 Soy el asistente del foro HealthUP. Puedo ayudarte con dudas sobre cómo publicar, comentar, dar likes o usar el foro. ¿En qué te ayudo?'
+  }
+];
+
+function responderForoChatbot(mensaje) {
+  const texto = mensaje.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const item of foroChatRespuestas) {
+    if (item.palabras.some(p => texto.includes(p.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))) {
+      return item.respuesta;
+    }
+  }
+  return 'No tengo información sobre eso. Puedo ayudarte con preguntas sobre cómo publicar, comentar, dar likes, subir fotos o gestionar tu perfil en el foro.';
+}
+
+function initForoChatbot() {
+  const messages    = document.getElementById('foro-chat-messages');
+  const input       = document.getElementById('foro-chat-input');
+  const sendBtn     = document.getElementById('foro-chat-send');
+  const suggestions = document.querySelectorAll('#foro-chat-suggestions .chat-suggestion');
+
+  if (!messages || !input || !sendBtn) return;
+
+  function agregarMensaje(texto, tipo) {
+    const div = document.createElement('div');
+    div.className = `chat-msg chat-msg--${tipo}`;
+    div.innerHTML = `<p>${texto}</p>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function enviar(texto) {
+    if (!texto.trim()) return;
+    agregarMensaje(texto, 'user');
+    input.value = '';
+    setTimeout(() => agregarMensaje(responderForoChatbot(texto), 'bot'), 400);
+  }
+
+  sendBtn.addEventListener('click', () => enviar(input.value));
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') enviar(input.value); });
+  suggestions.forEach(btn => {
+    btn.addEventListener('click', () => {
+      enviar(btn.textContent);
+      btn.style.display = 'none';
+    });
+  });
+}
+
+// ── RESPUESTAS A COMENTARIOS ───────────────────
+// Llama a esta función después de cargar los comentarios de un post
+async function initRespuestasComentarios(postId, listaEl) {
+  const user = getSession();
+
+  listaEl.querySelectorAll('.comentario').forEach(comentarioEl => {
+    const comentarioId = comentarioEl.dataset.id;
+    if (!comentarioId) return;
+
+    // Botón responder
+    const btnResponder = comentarioEl.querySelector('.btn-responder');
+    if (!btnResponder) return;
+
+    btnResponder.addEventListener('click', () => {
+      // Si ya hay un form abierto, cerrarlo
+      const existingForm = comentarioEl.querySelector('.reply-form');
+      if (existingForm) { existingForm.remove(); return; }
+
+      if (!user) { openModal('login'); return; }
+
+      const form = document.createElement('div');
+      form.className = 'reply-form';
+      form.innerHTML = `
+        <input type="text" placeholder="Escribe tu respuesta..." />
+        <button class="btn btn--primary btn--sm">Enviar</button>
+      `;
+      comentarioEl.appendChild(form);
+
+      const replyInput = form.querySelector('input');
+      const replyBtn   = form.querySelector('button');
+      replyInput.focus();
+
+      async function enviarRespuesta() {
+        const texto = replyInput.value.trim();
+        if (!texto) return;
+
+        replyBtn.disabled    = true;
+        replyBtn.textContent = '...';
+
+        try {
+          const res = await fetch(`${API_URL}/foro/posts/${postId}/comentarios`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id:       user.id,
+              contenido:     texto,
+              parent_id:     comentarioId
+            })
+          });
+
+          if (res.ok) {
+            form.remove();
+            let repliesEl = comentarioEl.querySelector('.comentario__replies');
+            if (!repliesEl) {
+              repliesEl = document.createElement('div');
+              repliesEl.className = 'comentario__replies';
+              comentarioEl.appendChild(repliesEl);
+            }
+            const div = document.createElement('div');
+            div.className = 'comentario__reply';
+            div.innerHTML = `<strong>${user.username}</strong><p>${texto}</p>`;
+            repliesEl.appendChild(div);
+          }
+        } finally {
+          replyBtn.disabled    = false;
+          replyBtn.textContent = 'Enviar';
+        }
+      }
+
+      replyBtn.addEventListener('click', enviarRespuesta);
+      replyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') enviarRespuesta(); });
+    });
+  });
+}
+
 // ── INIT ───────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const session = getSession();
@@ -1024,10 +1395,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initAuthModalTriggers();
   initHamburger();
   initNavbarScroll();
-  initBuscador();
   initRecetas();
   initForo();
   initNuevoPost();
+  initFiltrosRecetas();
+  initChatbot();
+  initToggleNuevoPost();
+  initFiltrosForo();
+  initForoChatbot();
 
   if (session) updateNavbarAuth(session);
 });

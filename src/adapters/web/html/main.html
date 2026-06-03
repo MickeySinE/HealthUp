@@ -22,11 +22,6 @@
         <li><a href="#" data-page="blog">Blog</a></li>
       </ul>
 
-      <div class="navbar__search">
-        <input type="text" id="buscador" placeholder="Buscar alimento..." autocomplete="off" />
-        <span class="navbar__search__icon">🔍</span>
-      </div>
-
       <div class="navbar__actions">
         <div class="auth-dropdown">
           <button class="btn btn--primary auth-dropdown__trigger" aria-haspopup="true" aria-expanded="false">
@@ -103,6 +98,41 @@
     </div>
   </div>
 
+    <!-- MODAL NUEVO POST -->
+  <div class="modal-overlay" id="nuevoPostModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" style="max-width:500px">
+      <button class="modal__close" aria-label="Cerrar" id="nuevoPostClose">✕</button>
+      <div class="modal__logo">Nueva <span>publicación</span></div>
+      <form id="nuevo-post-form">
+        <div class="form-group">
+          <label for="post-titulo">Título</label>
+          <input type="text" id="post-titulo" placeholder="Título del post" required />
+        </div>
+        <div class="form-group">
+          <label for="post-categoria">Categoría</label>
+          <select id="post-categoria">
+            <option value="">Sin categoría</option>
+            <option value="Nutrición">Nutrición</option>
+            <option value="Ejercicio">Ejercicio</option>
+            <option value="Bienestar">Bienestar</option>
+            <option value="Recetas">Recetas</option>
+            <option value="Pregunta">Pregunta</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="post-contenido">¿Qué quieres compartir?</label>
+          <textarea id="post-contenido" rows="4" placeholder="Escribe tu publicación..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="post-imagen-file">Imagen (opcional)</label>
+          <input type="file" id="post-imagen-file" accept="image/*" />
+        </div>
+        <div class="form-error" id="post-error"></div>
+        <button type="submit" class="btn btn--primary btn--full">Publicar</button>
+      </form>
+    </div>
+  </div>
+
   <!-- ══ PÁGINA: INICIO ══ -->
   <section class="page" id="page-inicio">
     <div class="hero">
@@ -130,59 +160,150 @@
   </section>
 
   <!-- ══ PÁGINA: RECETAS ══ -->
-  <section class="page" id="page-recetas" hidden>
-    <div class="page-hero">
-      <p class="hero__eyebrow">Saludable · Delicioso · Fácil</p>
-      <h1 class="page-hero__title">Recetas</h1>
-      <p class="page-hero__sub">Ideas de comidas que nutren tu cuerpo sin sacrificar el sabor.</p>
-    </div>
-    <div class="page-content">
-      <h2 class="section-title">Recetas saludables</h2>
+<section class="page" id="page-recetas" hidden>
+  <div class="page-hero">
+    <p class="hero__eyebrow">Saludable · Delicioso · Fácil</p>
+    <h1 class="page-hero__title">Recetas</h1>
+    <p class="page-hero__sub">Ideas de comidas que nutren tu cuerpo sin sacrificar el sabor.</p>
+  </div>
+ 
+  <div class="recetas-layout">
+ 
+    <!-- SIDEBAR IZQUIERDO — FILTROS -->
+    <aside class="recetas-sidebar recetas-sidebar--filtros">
+      <h3 class="sidebar-title">Filtrar</h3>
+ 
+      <div class="filter-group">
+        <p class="filter-group__label">Categoría</p>
+        <div class="filter-options" id="filter-categoria">
+          <button class="filter-chip is-active" data-filter="todas">Todas</button>
+          <button class="filter-chip" data-filter="Desayuno">🌅 Desayuno</button>
+          <button class="filter-chip" data-filter="Comida">🍽️ Comida</button>
+          <button class="filter-chip" data-filter="Cena">🌙 Cena</button>
+          <button class="filter-chip" data-filter="Snack">🍎 Snack</button>
+        </div>
+      </div>
+ 
+      <div class="filter-group">
+        <p class="filter-group__label">Calorías máx.</p>
+        <div class="filter-options" id="filter-calorias">
+          <button class="filter-chip is-active" data-calorias="0">Todas</button>
+          <button class="filter-chip" data-calorias="200">≤ 200 kcal</button>
+          <button class="filter-chip" data-calorias="300">≤ 300 kcal</button>
+          <button class="filter-chip" data-calorias="400">≤ 400 kcal</button>
+        </div>
+      </div>
+ 
+      <div class="filter-group">
+        <p class="filter-group__label">Tiempo</p>
+        <div class="filter-options" id="filter-tiempo">
+          <button class="filter-chip is-active" data-tiempo="0">Cualquiera</button>
+          <button class="filter-chip" data-tiempo="5">≤ 5 min</button>
+          <button class="filter-chip" data-tiempo="15">≤ 15 min</button>
+          <button class="filter-chip" data-tiempo="30">≤ 30 min</button>
+        </div>
+      </div>
+ 
+      <button class="btn btn--ghost btn--sm" id="filtros-reset" style="margin-top:0.5rem;width:100%">
+        Limpiar filtros
+      </button>
+    </aside>
+ 
+    <!-- CONTENIDO CENTRAL -->
+    <div class="recetas-main">
+      <div class="recetas-search-bar">
+        <input type="text" id="recetas-search" placeholder="Buscar receta o ingrediente..." autocomplete="off" />
+        <span>🔍</span>
+      </div>
+      <p class="recetas-count" id="recetas-count"></p>
       <div class="cards-grid" id="recetas-grid"></div>
+      <p id="recetas-empty" hidden style="text-align:center;opacity:0.5;padding:3rem 0">No se encontraron recetas.</p>
     </div>
+ 
+    <!-- SIDEBAR DERECHO — CHATBOT -->
+    <aside class="recetas-sidebar recetas-sidebar--chat">
+      <h3 class="sidebar-title">💬 Asistente de nutrición</h3>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg chat-msg--bot">
+          <p>¡Hola! Soy tu asistente de nutrición. Puedo ayudarte con preguntas sobre alimentos, macros, calorías y hábitos saludables. ¿En qué puedo ayudarte?</p>
+        </div>
+      </div>
+      <div class="chat-suggestions" id="chat-suggestions">
+        <button class="chat-suggestion">¿Qué son los macros?</button>
+        <button class="chat-suggestion">¿Cuántas calorías debo comer?</button>
+        <button class="chat-suggestion">¿Qué es la proteína?</button>
+        <button class="chat-suggestion">Alimentos ricos en fibra</button>
+      </div>
+      <div class="chat-input-wrap">
+        <input type="text" id="chat-input" placeholder="Escribe tu pregunta..." autocomplete="off" />
+        <button class="btn btn--primary btn--sm" id="chat-send">Enviar</button>
+      </div>
+    </aside>
+ 
+  </div>
+
   </section>
+      <!-- ══ PÁGINA: FORO ══ -->
+    <section class="page" id="page-blog" hidden>
+      <div class="page-hero">
+        <p class="hero__eyebrow">Comunidad · Salud · Experiencias</p>
+        <h1 class="page-hero__title">Foro</h1>
+        <p class="page-hero__sub">Comparte tu experiencia y aprende de otros.</p>
+      </div>
 
-  <!-- ══ PÁGINA: FORO ══ -->
-  <section class="page" id="page-blog" hidden>
-    <div class="page-hero">
-      <p class="hero__eyebrow">Comunidad · Salud · Experiencias</p>
-      <h1 class="page-hero__title">Foro</h1>
-      <p class="page-hero__sub">Comparte tu experiencia y aprende de otros.</p>
-    </div>
-    <div class="foro-container" style="max-width:780px;margin:0 auto;padding:2rem 1rem;">
+      <div class="foro-layout">
 
-      <form class="nuevo-post-form" id="nuevo-post-form">
-        <h3>Nueva publicación</h3>
-        <div class="form-field">
-          <input type="text" id="post-titulo" placeholder="Título del post" required />
-        </div>
-        <div class="form-field">
-          <select id="post-categoria">
-            <option value="">Sin categoría</option>
-            <option value="Nutrición">Nutrición</option>
-            <option value="Ejercicio">Ejercicio</option>
-            <option value="Bienestar">Bienestar</option>
-            <option value="Recetas">Recetas</option>
-            <option value="Pregunta">Pregunta</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <textarea id="post-contenido" placeholder="¿Qué quieres compartir?" rows="4" required></textarea>
-        </div>
-        <div class="form-field">
-          <label style="font-size:0.85rem;color:var(--stone-600);display:block;margin-bottom:4px">Imagen (opcional)</label>
-          <input type="file" id="post-imagen-file" accept="image/*" />
-        </div>
-        <button type="submit" class="btn btn--primary">Publicar</button>
-      </form>
+        <!-- SIDEBAR IZQUIERDO -->
+        <aside class="foro-sidebar foro-sidebar--izq">
 
-      <div class="foro-grid" id="foro-grid"></div>
-    </div>
+          <!-- BOTÓN NUEVA PUBLICACIÓN -->
+          <button class="btn btn--primary" id="toggle-nuevo-post-btn" style="width:100%">
+            Nueva publicación
+          </button>
+
+          <!-- FILTROS POR CATEGORÍA -->
+          <div class="filter-group" style="margin-top:0.5rem">
+            <p class="filter-group__label">Filtrar por categoría</p>
+            <div class="filter-options" id="foro-filter-categoria">
+              <button class="filter-chip is-active" data-foro-filter="todas">Todas</button>
+              <button class="filter-chip" data-foro-filter="Nutrición">🥗 Nutrición</button>
+              <button class="filter-chip" data-foro-filter="Ejercicio">🏃 Ejercicio</button>
+              <button class="filter-chip" data-foro-filter="Bienestar">🧘 Bienestar</button>
+              <button class="filter-chip" data-foro-filter="Recetas">🍳 Recetas</button>
+              <button class="filter-chip" data-foro-filter="Pregunta">❓ Pregunta</button>
+            </div>
+          </div>
+
+        </aside>
+
+        <!-- CONTENIDO CENTRAL -->
+        <div class="foro-main">
+          <div class="foro-grid" id="foro-grid"></div>
+        </div>
+
+        <!-- SIDEBAR DERECHO — AYUDA DEL FORO -->
+        <aside class="foro-sidebar foro-sidebar--der">
+          <h3 class="sidebar-title">💬 Ayuda del foro</h3>
+          <div class="chat-messages" id="foro-chat-messages">
+            <div class="chat-msg chat-msg--bot">
+              <p>¡Hola! Soy el asistente del foro HealthUP. Puedo ayudarte con dudas sobre cómo usar el foro. ¿En qué te ayudo?</p>
+            </div>
+          </div>
+          <div class="chat-suggestions" id="foro-chat-suggestions">
+            <button class="chat-suggestion">¿Cómo publico?</button>
+            <button class="chat-suggestion">¿Cómo comento?</button>
+            <button class="chat-suggestion">¿Puedo subir fotos?</button>
+            <button class="chat-suggestion">¿Cómo doy like?</button>
+            <button class="chat-suggestion">¿Puedo borrar mi post?</button>
+          </div>
+          <div class="chat-input-wrap">
+            <input type="text" id="foro-chat-input" placeholder="Escribe tu duda..." autocomplete="off" />
+            <button class="btn btn--primary btn--sm" id="foro-chat-send">Enviar</button>
+          </div>
+        </aside>
+
+      </div>
   </section>
-  <!-- ══════════════════════════════════════════
-     PÁGINA PERFIL — pegar dentro de main.html
-     como un <section class="page" id="page-perfil" hidden>
-     ══════════════════════════════════════════ -->
 
   <section class="page" id="page-perfil" hidden>
     <div class="perfil-container">
